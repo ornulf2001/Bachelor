@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 #%%
 # --- Strømforbruk ---
-
+#Test kommentar
 fil = 'Verdier Bacheloroppgave - Timesdata strøm.csv'
 df = pd.read_csv(fil, sep=',')
 juli = df.iloc[:]['Verdi juli']
