@@ -225,6 +225,20 @@ print(np.mean(vindspeed))
 plt.plot(vind)
 plt.show()
 # %%
+# --- Hvor mye blåser det? ---
+v10,v9,v8,v7,v6,v5,v4,v3,v0 = 0,0,0,0,0,0,0,0,0
+for v in vindspeed:
+    if v>10: v10+=1
+    elif v>9: v9+=1
+    elif v>8: v8+=1
+    elif v>7: v7+=1
+    elif v>6: v6+=1
+    elif v>5: v5+=1
+    elif v>4: v4+=1
+    elif v>3: v3+=1
+    else: v0 +=1
+print(v0)
+#%%
 
 def døgnverdi(liste):
     '''Lager liste med total produksjon per døgn'''
