@@ -2,6 +2,35 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
+
+def døgnverdi(liste):
+    '''Lager liste med total produksjon per døgn'''
+    døgnverdi = []
+    for i in range(0,365):
+        døgnverdi.append(sum(liste[(0+24*i):(24+24*i)]))
+    return døgnverdi
+
+def månedverdi(liste):
+    '''Gjør om timesverdier til daglig gjennomsnitt for hver måned'''
+    månedlengde = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
+    månedliste = []
+    start, slutt = 0, 0
+    for i in range(0,12):
+        slutt += 24*månedlengde[i]
+        månedliste.append(sum(liste[start:slutt])/månedlengde[i])
+        # print(slutt)
+        start += 24*månedlengde[i]
+    return månedliste
+
+def døgnfordeling(måned,døgn):
+    '''Viser fordelingen av i løpet av timene i døgnet'''
+    time = np.zeros(24)
+    for t in range(0,24):
+        for d in range(0,døgn):
+            time[t] += måned[d*24+t]
+    time = time/døgn
+    return time
+
 #%%
 # --- Strømforbruk ---
 
@@ -20,34 +49,38 @@ def timezwapper(måned,døgn):
 juli_dag = timezwapper(juli,31)
 august_dag = timezwapper(august,31)
 september_dag = timezwapper(september,30)
-# plt.plot(juli_dag)
-# plt.show()
-# plt.plot(august_dag)
-# plt.show()
-# plt.plot(september_dag)
-# plt.show()
-#print(juli_dag)
-#print(sum(juli_dag))
-#print(sum(juli))
+
 def stats(måned):
     return str(round(np.sum(måned),2)) + '\t\t' + str(round(np.mean(måned),2)) + '\n'
 #print(stats(juli_dag))
 print('Sum per måned: \t\tAvg per dag:\n'+ 'Juli:\t\t' + stats(juli_dag) + 'August:\t\t' + stats(august_dag) + 'September:\t' + stats(september_dag))
-def døgnfordeling(måned,døgn):
-    time = np.zeros(24)
-    for t in range(0,24):
-        for d in range(0,døgn):
-            time[t] += måned[d*24+t]
-    time = time/døgn
-    return time
+
 #print(døgnfordeling(juli,31))
 plt.plot(døgnfordeling(juli,31))
 plt.show()
 
-#%%
+#%% ---Laster inn strømfil---
 fil_2 = 'Timesforbruk hele 2021 og 2022 V2.csv'
 fil_3 = 'Timesforbruk hele 2021 og 2022.csv'
-df = pd.read_csv(fil_3, sep=';')
+fil_4 = 'Timesforbruk 2022 jan-nov og desember 2021.csv'
+df = pd.read_csv(fil_4, sep=';')
+
+#%% ---Feilsøking---
+total = 0
+time = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]#np.zeros(24)
+for i in range(0,len(df)):
+    if df.iloc[i]['Time'] == 'Totalt':
+        total += 1
+        if df.iloc[i+1]['Time'] == '22':
+            print(f'hey: {i}')
+    elif df.iloc[i]['Time'] == 'Time':
+        pass
+    else:
+        val = int(df.iloc[i]['Time'])
+        time[val] += 1
+print(total)
+print(time)
+#%%
 #data = df
 #data = data.split(';')
 df.iloc[0]['Time']
@@ -72,13 +105,22 @@ for i in range(0,len(df)):
 forbruk.reverse()
 time.reverse()
 døgnfordelt = døgnfordeling(forbruk,int(len(forbruk)/24))
+mean_månedforbruk = månedverdi(forbruk)
 print(f'Totalt strømforbruk: {sum(forbruk)}')
+måneder = ['jan', 'feb', 'mar', 'apr', 'mai', 'jun', 'jul', 'aug', 'sep', 'okt', 'nov', 'des']
 
-plt.plot(døgnfordelt)
+print(mean_månedforbruk)
+plt.plot(måneder,mean_månedforbruk)
+plt.xlabel('Måned')
+plt.ylabel('kWh/dag')
 plt.show()
 # time
 # int(len(forbruk)/24)
 # forbruk
+plt.plot(døgnfordelt)
+plt.xlabel('Klokkeslett')
+plt.ylabel('kWh/h')
+plt.show()
 
 #%%
 # --- Automagisk melding i Teams :) ---
@@ -137,6 +179,8 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
     Gt_noct = 800
     ta = 0.9             # ta er 0.9 for silicon solar cell
 
+    alb = 0.5           # Albedoverdi gjennom året
+
     test_list = []
 
     for i,val in enumerate(Gb_n):
@@ -154,7 +198,7 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
                         +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
                         +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
             
-            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180
+            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + alb * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
             if G < 0: G = 0
             P = G * n_sol
 
@@ -218,7 +262,7 @@ def vindprod(vindspeed,Ta,RH,SP, cut_in,cut_out,A,Cp,n_gen):
     return liste
 
 # sjekker produksjon fra en middels vindturbin
-vind = vindprod(vindspeed,Ta,RH,SP, cut_in=3,cut_out=60,A = 24,Cp=0.4,n_gen=0.9)
+vind = vindprod(vindspeed,Ta,RH,SP, cut_in=2.8,cut_out=60,A = 12.6,Cp=0.385,n_gen=0.9)
 
 print(sum(vind))
 print(np.mean(vindspeed))
@@ -226,35 +270,26 @@ plt.plot(vind)
 plt.show()
 # %%
 # --- Hvor mye blåser det? ---
-v10,v9,v8,v7,v6,v5,v4,v3,v0 = 0,0,0,0,0,0,0,0,0
+vindhastighet = ['0-1','1-2','2-3','3-4','4-5','5-6','6-7','7-8','8-9','9-10','10<']
+vindtimer = [0,0,0,0,0,0,0,0,0,0,0]
 for v in vindspeed:
-    if v>10: v10+=1
-    elif v>9: v9+=1
-    elif v>8: v8+=1
-    elif v>7: v7+=1
-    elif v>6: v6+=1
-    elif v>5: v5+=1
-    elif v>4: v4+=1
-    elif v>3: v3+=1
-    else: v0 +=1
-print(v0)
+    if v>10: vindtimer[10]+=1
+    elif v>9: vindtimer[9]+=1
+    elif v>8: vindtimer[8]+=1
+    elif v>7: vindtimer[7]+=1
+    elif v>6: vindtimer[6]+=1
+    elif v>5: vindtimer[5]+=1
+    elif v>4: vindtimer[4]+=1
+    elif v>3: vindtimer[3]+=1
+    elif v>2: vindtimer[2]+=1
+    elif v>1: vindtimer[1]+=1
+    else: vindtimer[0] +=1
+print(vindhastighet)
+print(vindtimer)
+plt.plot(vindhastighet,vindtimer)
+plt.xlabel('Vindhastighet [m/s]')
+plt.ylabel('Timer')
+plt.grid()
+plt.show()
 #%%
 
-def døgnverdi(liste):
-    '''Lager liste med total produksjon per døgn'''
-    døgnverdi = []
-    for i in range(0,365):
-        døgnverdi.append(sum(liste[(0+24*i):(24+24*i)]))
-    return døgnverdi
-
-def månedverdi(liste):
-    '''Gjør om timesverdier til daglig gjennomsnitt for hver måned'''
-    månedlengde = [31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31]
-    månedliste = []
-    start, slutt = 0, 0
-    for i in range(0,12):
-        slutt += 24*månedlengde[i]
-        månedliste.append(sum(liste[start:slutt])/månedlengde[i])
-        print(slutt)
-        start += 24*månedlengde[i]
-    return månedliste
