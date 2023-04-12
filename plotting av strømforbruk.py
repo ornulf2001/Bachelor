@@ -34,30 +34,30 @@ def døgnfordeling(måned,døgn):
 #%%
 # --- Strømforbruk ---
 
-fil = 'Verdier Bacheloroppgave - Timesdata strøm.csv'
-df = pd.read_csv(fil, sep=',')
-juli = df.iloc[:]['Verdi juli']
-august = df.iloc[:]['Verdi august']
-september = df.iloc[:]['Verdi september']
-def timezwapper(måned,døgn):
-    måned_dag = np.zeros(døgn)
-    for d in range(0,døgn):
-        for t in range(0,24):
-            måned_dag[d] += måned[d*24+t]
-    return måned_dag
+# fil = 'Verdier Bacheloroppgave - Timesdata strøm.csv'
+# df = pd.read_csv(fil, sep=',')
+# juli = df.iloc[:]['Verdi juli']
+# august = df.iloc[:]['Verdi august']
+# september = df.iloc[:]['Verdi september']
+# def timezwapper(måned,døgn):
+#     måned_dag = np.zeros(døgn)
+#     for d in range(0,døgn):
+#         for t in range(0,24):
+#             måned_dag[d] += måned[d*24+t]
+#     return måned_dag
 
-juli_dag = timezwapper(juli,31)
-august_dag = timezwapper(august,31)
-september_dag = timezwapper(september,30)
+# juli_dag = timezwapper(juli,31)
+# august_dag = timezwapper(august,31)
+# september_dag = timezwapper(september,30)
 
-def stats(måned):
-    return str(round(np.sum(måned),2)) + '\t\t' + str(round(np.mean(måned),2)) + '\n'
-#print(stats(juli_dag))
-print('Sum per måned: \t\tAvg per dag:\n'+ 'Juli:\t\t' + stats(juli_dag) + 'August:\t\t' + stats(august_dag) + 'September:\t' + stats(september_dag))
+# def stats(måned):
+#     return str(round(np.sum(måned),2)) + '\t\t' + str(round(np.mean(måned),2)) + '\n'
+# #print(stats(juli_dag))
+# print('Sum per måned: \t\tAvg per dag:\n'+ 'Juli:\t\t' + stats(juli_dag) + 'August:\t\t' + stats(august_dag) + 'September:\t' + stats(september_dag))
 
-#print(døgnfordeling(juli,31))
-plt.plot(døgnfordeling(juli,31))
-plt.show()
+# #print(døgnfordeling(juli,31))
+# plt.plot(døgnfordeling(juli,31))
+# plt.show()
 
 #%% ---Laster inn strømfil---
 fil_2 = 'Timesforbruk hele 2021 og 2022 V2.csv'
@@ -66,20 +66,20 @@ fil_4 = 'Timesforbruk 2022 jan-nov og desember 2021.csv'
 df = pd.read_csv(fil_4, sep=';')
 
 #%% ---Feilsøking---
-total = 0
-time = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]#np.zeros(24)
-for i in range(0,len(df)):
-    if df.iloc[i]['Time'] == 'Totalt':
-        total += 1
-        if df.iloc[i+1]['Time'] == '22':
-            print(f'hey: {i}')
-    elif df.iloc[i]['Time'] == 'Time':
-        pass
-    else:
-        val = int(df.iloc[i]['Time'])
-        time[val] += 1
-print(total)
-print(time)
+# total = 0
+# time = [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]#np.zeros(24)
+# for i in range(0,len(df)):
+#     if df.iloc[i]['Time'] == 'Totalt':
+#         total += 1
+#         if df.iloc[i+1]['Time'] == '22':
+#             print(f'hey: {i}')
+#     elif df.iloc[i]['Time'] == 'Time':
+#         pass
+#     else:
+#         val = int(df.iloc[i]['Time'])
+#         time[val] += 1
+# print(total)
+# print(time)
 #%%
 #data = df
 #data = data.split(';')
@@ -104,6 +104,7 @@ for i in range(0,len(df)):
 
 forbruk.reverse()
 time.reverse()
+dato.reverse()
 døgnfordelt = døgnfordeling(forbruk,int(len(forbruk)/24))
 mean_månedforbruk = månedverdi(forbruk)
 print(f'Totalt strømforbruk: {sum(forbruk)}')
@@ -122,17 +123,30 @@ plt.xlabel('Klokkeslett')
 plt.ylabel('kWh/h')
 plt.show()
 
-#%%
-# --- Automagisk melding i Teams :) ---
 
-import pymsteams
-for i in [1,2,3,4,5]:
-    myTeamsMessage = pymsteams.connectorcard("https://studntnu.webhook.office.com/webhookb2/c66adcd5-80ed-4d70-871d-5b1134427fa0@09a10672-822f-4467-a5ba-5bb375967c05/IncomingWebhook/d66ea2b82c734381a67d369368135444/f0cb5ccb-99e0-4d24-ba80-42cd05c88c63")
-    myTeamsMessage.text(f"Hei {i}. gang")
-    myTeamsMessage.send()
-myTeamsMessage = pymsteams.connectorcard("https://studntnu.webhook.office.com/webhookb2/c66adcd5-80ed-4d70-871d-5b1134427fa0@09a10672-822f-4467-a5ba-5bb375967c05/IncomingWebhook/d66ea2b82c734381a67d369368135444/f0cb5ccb-99e0-4d24-ba80-42cd05c88c63")
-myTeamsMessage.text(f"Takk for meeej")
-myTeamsMessage.send()
+#%%
+#---Maks effekt per måned---
+def månedmaks(årsliste):
+    '''Finner høyeste verdi for hver måned. Fin for å finne makseffekt'''
+    måned_maks = [0,0,0,0,0,0,0,0,0,0,0,0]
+    døgntot = 0
+    for i,val in enumerate([31,28,31,30,31,30,31,31,30,31,30,31]):
+        måned_maks[i] = max(årsliste[24*døgntot:24*(døgntot+val)])
+        døgntot += val
+    return måned_maks
+print(månedmaks(forbruk))
+
+#---Totalt forbruk per måned---
+
+def månedtot(årsliste):
+    '''Finner total verdi for hver måned. Fin for å finne strømforbruk'''
+    måned_tot = [0,0,0,0,0,0,0,0,0,0,0,0]
+    døgntot = 0
+    for i,val in enumerate([31,28,31,30,31,30,31,31,30,31,30,31]):
+        måned_tot[i] = round(sum(årsliste[24*døgntot:24*(døgntot+val)]),1)
+        døgntot += val
+    return måned_tot
+print(månedtot(forbruk))
 
 #%%
 # --- Sol ---
@@ -179,7 +193,6 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
     Gt_noct = 800
     ta = 0.9             # ta er 0.9 for silicon solar cell
 
-    alb = 0.5           # Albedoverdi gjennom året
 
     test_list = []
 
@@ -197,15 +210,18 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
                         +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
                         +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
+            if N < 89 or N > 334: albedo = 0.65
+            else: albedo = 0.2
             
-            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + alb * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
+            
+            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
             if G < 0: G = 0
             P = G * n_sol
 
             Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
             tap_varme = T_tap_Pmpp/(Tc-T_noct)
 
-            produksjon = (P + tap_varme) * antal
+            produksjon = (P + tap_varme) * antal / 1000
             
             # if i < 48:
             #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
@@ -216,8 +232,12 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
 
 # Regner ut solproduksjon
 tak_1 = solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 20)
+tak_2 = solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 20)
 print(sum(tak_1))
 print(max(tak_1))
+solproduksjon=[]
+for i in range(0,8760):
+    solproduksjon.append(tak_1[i]+tak_2[i])
 
 # ---plotting av graf
 # plt.plot(tak_1[0:8760])
@@ -247,7 +267,7 @@ def luft_tetthet(Ta,RH,SP):
     return rho
 
 def vindprod(vindspeed,Ta,RH,SP, cut_in,cut_out,A,Cp,n_gen):
-    '''Tar inn vinddata og regner ut produksjon fra vindturbin'''
+    '''Tar inn vinddata og regner ut produksjon fra vindturbin, kW'''
     liste = []
     for i,v in enumerate(vindspeed):
         if v <= cut_in or v >= cut_out:
@@ -256,7 +276,7 @@ def vindprod(vindspeed,Ta,RH,SP, cut_in,cut_out,A,Cp,n_gen):
             rho = luft_tetthet(Ta[i],RH[i],SP[i])
 
             Pm = 0.5 * Cp * rho * A * v**3
-            P = Pm * n_gen
+            P = Pm * n_gen / 1000
 
         liste.append(P)
     return liste
@@ -292,4 +312,33 @@ plt.ylabel('Timer')
 plt.grid()
 plt.show()
 #%%
+#---Flisfyring---
+bioandel = 0.2   # % av strømforbruket som kan dekkes av bio
+n_bio = 0.8      # virkningsgrad bioanlegg
+V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
 
+levert_energi = [verdi*bioandel for verdi in forbruk]
+flis_energi = [verdi/n_bio for verdi in levert_energi]
+Vol_flis = [verdi/V_flis for verdi in flis_energi]
+print(f'Energi fra bio: {round(sum(levert_energi))} kWh/år\nMaks effekt bio: {round(max(levert_energi))}')
+print(f'Energi fra flis: {round(sum(flis_energi))} kWh/år\nMaks effekt flis: {round(max(flis_energi))}')
+print(f'Mengde flis: {round(sum(Vol_flis))} lm^3/år\nMaks effekt kg_flis: {round(max(Vol_flis),2)}')
+
+#%%
+#---Energibalanse---
+energibalanse = []
+kjøpt_strøm = []
+solgt_strøm = []
+for i in range(0,8760):
+    energi = forbruk[i]-levert_energi[i]-solproduksjon[i]-vind[i]
+    if energi >= 0:
+        energibalanse.append(energi)
+        kjøpt_strøm.append(energi)
+        solgt_strøm.append(0)
+    else:
+        energibalanse.append(energi)
+        kjøpt_strøm.append(0)
+        solgt_strøm.append(-energi)
+print(f'Forbruk: {sum(forbruk)}, bio: {sum(levert_energi)}, sol: {sum(solproduksjon)}, vind: {sum(vind)}')
+print(f'Energibalanse:\nsum: {sum(energibalanse)}, maks: {max(energibalanse)}, min: {min(energibalanse)}')
+print(f'Kjøpt: {sum(kjøpt_strøm)}, solgt: {sum(solgt_strøm)}')
