@@ -221,14 +221,14 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
             tap_varme = T_tap_Pmpp/(Tc-T_noct)
 
-            produksjon = (P + tap_varme) * antal / 1000
+            produksjon = (P + tap_varme) * A * antal / 1000
             
             # if i < 48:
             #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
             test_list.append(produksjon)
     return test_list
 
-
+#%%
 
 # Regner ut solproduksjon
 tak_1 = solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 20)
@@ -342,3 +342,75 @@ for i in range(0,8760):
 print(f'Forbruk: {sum(forbruk)}, bio: {sum(levert_energi)}, sol: {sum(solproduksjon)}, vind: {sum(vind)}')
 print(f'Energibalanse:\nsum: {sum(energibalanse)}, maks: {max(energibalanse)}, min: {min(energibalanse)}')
 print(f'Kjøpt: {sum(kjøpt_strøm)}, solgt: {sum(solgt_strøm)}')
+#%%
+#---Optimal tilt-vinkel for bakkeplasert og sørvendt PV-panel---
+vinkel_list = []
+produksjon_list = []
+maks_prod = 0
+beste_vinkel = 0
+for i in range(15,30):
+    vinkel = i
+    produksjon = sum(solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = vinkel))
+    if produksjon > maks_prod:
+        maks_prod = produksjon
+        beste_vinkel = vinkel
+    elif produksjon == maks_prod: print(f'Tie ball game at vinkel {i}')
+    vinkel_list.append(vinkel)
+    produksjon_list.append(produksjon)
+    # print(produksjon)
+    # print(maks_prod)
+plt.plot(vinkel_list,produksjon_list)
+plt.xlabel('Tilt-vinkel')
+plt.ylabel('Produksjon i kWh/år')
+plt.title('Tilt-vinkel optimalisering')
+plt.show()
+print(f'Beste vinkel er {beste_vinkel}')
+#%%
+#---Optimal sør-vinkel for bakkeplasert og tiltet PV-panel---
+vinkel_list = []
+produksjon_list = []
+maks_prod = 0
+beste_vinkel = 0
+for i in [-40,-20,-10,-5,0,5,10,20,40]:
+    vinkel = i
+    # print(vinkel)
+    produksjon = sum(solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = vinkel, beta = 22))
+    # print(produksjon)
+    if produksjon > maks_prod:
+        maks_prod = produksjon
+        beste_vinkel = vinkel
+    elif produksjon == maks_prod: print(f'Tie ball game at vinkel {vinkel}')
+    vinkel_list.append(vinkel)
+    produksjon_list.append(produksjon)
+    # print(produksjon)
+    # print(maks_prod)
+plt.plot(vinkel_list,produksjon_list)
+plt.xlabel('Beta-vinkel')
+plt.ylabel('Produksjon i kWh/år')
+plt.title('Beta-vinkel optimalisering')
+plt.show()
+print(f'Beste vinkel er {beste_vinkel}')
+#%%
+print(f'Optimal vinkel gir: {sum(solprod(Gb_n,Gd_h,Ta,1,-20,22))}')
+print(f'Uoptimal vinkel gir: {sum(solprod(Gb_n,Gd_h,Ta,1,0,0))}')
+
+#%%
+maks_prod = 0
+for beta in range(21,23):
+    for Z in range(-21,-19):
+        prod = sum(solprod(Gb_n,Gd_h,Ta,1,Z,beta))
+        if prod > maks_prod:
+            tekst = f'Maks produksjon er {prod}, ved Zs = {Z} og beta = {beta}'
+        print('running')
+print(tekst)
+#%%
+#---Plot av fordeling av strømforbruket i løpet av ukedager---
+import datetime
+
+datoen = dato[0]
+print(datoen)
+data = 'a b c'
+
+dateTimeInstance1 = datetime.datetime(int(datoen.split('.')[2]), int(datoen.split('.')[1]), int(datoen.split('.')[0]))
+dayOfTheWeek1 = dateTimeInstance1.weekday()
+print(dayOfTheWeek1)
