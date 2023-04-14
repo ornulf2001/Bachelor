@@ -406,11 +406,58 @@ print(tekst)
 #%%
 #---Plot av fordeling av strømforbruket i løpet av ukedager---
 import datetime
+antal = np.zeros(24*7)
+timeverdi = np.zeros(24*7)
+tidspunkt = 'Mandag    Tirsdag    Onsdag    Torsdag    Fredag    Lørdag    Søndag'
+for i in range(0,8760):
+    datoen = dato[i]
+    dateTimeInstance1 = datetime.datetime(int(datoen.split('.')[2]), int(datoen.split('.')[1]), int(datoen.split('.')[0]))
+    ukedag = dateTimeInstance1.weekday()
+    timen = time[i]
+    forbruket = forbruk[i]
+    uketime = ukedag*24+int(timen)
+    antal[uketime] += 1
+    timeverdi[uketime] += forbruket
+for i,val in enumerate(timeverdi):
+    if antal[i]>0:
+        timeverdi[i] = val/antal[i]
+plt.plot(timeverdi)
+plt.xlabel(tidspunkt)
+plt.ylabel('kWh/h')
+plt.title('')
+plt.show()
 
-datoen = dato[0]
-print(datoen)
-data = 'a b c'
+#%%
+#---Beregning av kostnad---
+#---Nettleie---
+def nettleie(strømforbruk):
+    # 0 = jan, 1 = feb, 2 = mar, 3 = apr, 4 = mai, 5 = jun, 6 = jul, 7 = aug, 8 = sep, 9 = okt, 10 = nov, 11 = des
+    månedlig_strømforbruk = månedtot(strømforbruk)
+    månedlig_makseffekt = månedmaks(strømforbruk)
+    nettleie = [0,0,0,0,0,0,0,0,0,0,0,0]
+    fastledd = 500 #kr/mnd
+    effektledd_s = 32 #kr/kW/mnd april-september
+    effektledd_v = 75 #kr/kW/mnd oktober-mars
+    energiledd = 5 #øre/kWh
+    elavgift_1 = 9.16 #øre/kWh januar-mars
+    elavgift_2 = 15.84 #øre/kWh april-desember
+    for i in range(0,12):
+        nettleie[i] += fastledd + månedlig_strømforbruk[i] * energiledd/100
+        if i > 2 and i < 9:
+            nettleie[i] += effektledd_s * månedlig_makseffekt[i]
+        else:
+            nettleie[i] += effektledd_v * månedlig_makseffekt[i]
+        if i < 3:
+            nettleie[i] += månedlig_strømforbruk[i] * elavgift_1/100
+        else:
+            nettleie[i] += månedlig_strømforbruk[i] * elavgift_2/100
+        nettleie[i] = round(nettleie[i],2)
+    return nettleie
 
-dateTimeInstance1 = datetime.datetime(int(datoen.split('.')[2]), int(datoen.split('.')[1]), int(datoen.split('.')[0]))
-dayOfTheWeek1 = dateTimeInstance1.weekday()
-print(dayOfTheWeek1)
+nettleie_kr = nettleie(forbruk)
+totbruk = månedtot(forbruk)
+nettleie_kr
+#%%
+døgnfordelt_sol = døgnfordeling(solproduksjon,365)
+plt.plot(døgnfordelt_sol)
+plt.plot()
