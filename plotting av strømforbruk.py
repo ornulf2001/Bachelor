@@ -183,12 +183,12 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
     L = 60.61318
     LL = 12.01088
     SL = 15
-    n_sol = 0.20 # Virkningsgrad sol !!!
+    n_sol = 0.205 # Virkningsgrad sol !!!
     LST = -1
-    A = 1.8   # Areal per panel !!!
+    A = 1.722*1.134   # Areal per panel !!! =1.953m^2
     # Tap pga. varme
-    T_tap_Pmpp = -0.0045 #Varierer per paneltype, Temperaturkoefisient Pmpp
-    T_noct = 46          #Varierer per paneltype, Celletemp test
+    T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
+    T_noct = 45          #Varierer per paneltype, Celletemp test
     T_a_noct = 20        # NOCT omgivelsestemp
     Gt_noct = 800
     ta = 0.9             # ta er 0.9 for silicon solar cell
