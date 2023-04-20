@@ -203,14 +203,14 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             delta = 23.45 * sind(360/365*(284+N))
             B = (N-81)*360/364
             ET = 9.87*sind(2*B)-7.53*cosd(B)-1.5*sind(B)
-            AST = LST + ET/60 - 4/60*(SL-LL) # (-) når østlig halvkule
+            AST = LST + ET/60 - 4/60*(SL-LL) # (-<_>-) når østlig halvkule
             h = (AST - 12) * 15
             alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
             z = asind(cosd(delta)*sind(h)/cosd(alfa))
             theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
                         +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
                         +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
-            if N < 89 or N > 334: albedo = 0.65
+            if N < 90 or N > 333: albedo = 0.65
             else: albedo = 0.2
             
             
@@ -219,7 +219,7 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             P = G * n_sol
 
             Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
-            tap_varme = T_tap_Pmpp/(Tc-T_noct)
+            tap_varme = T_tap_Pmpp*(Tc-T_noct)
 
             produksjon = (P + tap_varme) * A * antal / 1000
             
@@ -461,3 +461,66 @@ nettleie_kr
 døgnfordelt_sol = døgnfordeling(solproduksjon,365)
 plt.plot(døgnfordelt_sol)
 plt.plot()
+#%%
+#---Batteri---
+# eksempelbatteri
+DoD = 0.8
+E,V = 200,12.8 # Ah, V
+kapasitet = 2.56 # kWh
+antall = 10
+tot_kap = kapasitet * antall
+n_charge = 0.9
+n_discharge = 0.9
+C_charge = 1/7
+C_discharge = 1/7
+batterinivå_f,batterinivå_e = 0,0
+batterinivå = []
+ladestrøm = []
+nytt_forbruk = []
+for i, val in enumerate(time):
+    if i < 24*365:
+        timenr = int(val)
+
+        if timenr >= 1 and timenr <= 6:
+            #charge
+            batterinivå_e = min(batterinivå_f + C_charge*tot_kap, tot_kap)
+        elif timenr >= 17 and timenr <= 22:
+            #discharge
+            batterinivå_e = max(batterinivå_f - C_discharge*tot_kap, tot_kap*(1-DoD))
+        
+        batterinivå.append(batterinivå_e)
+        # print(f'I time {timenr} er batterinivå {batterinivå_e}')
+        ladestrøm.append(batterinivå_e - batterinivå_f)
+        nytt_forbruk.append(forbruk[i]+batterinivå_e - batterinivå_f)
+        batterinivå_f = batterinivå_e
+plt.plot(døgnfordeling(nytt_forbruk,365))
+plt.show()
+#%%
+print(f'Nettleie før = {sum(nettleie(forbruk))}\nNettleie etter = {sum(nettleie(nytt_forbruk))}')
+#%%
+#---Strømpris---
+import locale
+locale.setlocale(locale.LC_ALL, '')
+spotpris_22 = 'spotprisoslo22-mod.csv'
+spotpris_22_liste = pd.read_csv(spotpris_22, sep=';')
+spotpris_21 = 'spotprisoslo21-mod.csv'
+spotpris_21_liste = pd.read_csv(spotpris_21, sep=';')
+påslag = 0.049 # kr/kWh
+strømpris_liste = []
+
+for i in range(0,8760):
+    dag = int(i/24)
+    time = i-dag*24+1
+    if dag < 334:
+        spotpris = spotpris_22_liste.iloc[dag][str(time)]
+        spotpris_kr = locale.atof(spotpris)/1000
+    else:
+        spotpris = spotpris_21_liste.iloc[dag][str(time)]
+        spotpris_kr = locale.atof(spotpris)/1000
+    # print(dag)
+    strømpris = spotpris_kr + påslag
+    strømpris_liste.append(strømpris)
+    # print(f'Strmømpris dag {dag+1} i time {time} er {strømpris} kr/MWh')
+# print(strømpris_liste[8759])
+plt.plot(døgnfordeling(strømpris_liste,365))
+plt.show()
