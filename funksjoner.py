@@ -32,7 +32,7 @@ def døgnfordeling(måned,døgn):
 
 #---Plot av fordeling av strømforbruket i løpet av ukedager---
 def ukesfordeling(forbruk,dato,time):
-    
+
     antal = np.zeros(24*7)
     timeverdi = np.zeros(24*7)
     tidspunkt = 'Mandag    Tirsdag    Onsdag    Torsdag    Fredag    Lørdag    Søndag'
@@ -48,6 +48,7 @@ def ukesfordeling(forbruk,dato,time):
     for i,val in enumerate(timeverdi):
         if antal[i]>0:
             timeverdi[i] = val/antal[i]
+    #return timeverdi
     plt.plot(timeverdi)
     plt.xlabel(tidspunkt)
     plt.ylabel('kWh/h')
@@ -82,6 +83,62 @@ acosd = lambda degrees: np.rad2deg(np.arccos(degrees))
 
 def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
     '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
+    til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
+    roterende panelstativ, sett Zs og beta til 666'''
+    # faste verdier
+    L = 60.61318
+    LL = 12.01088
+    SL = 15
+    n_sol = 0.205 # Virkningsgrad sol !!!
+    LST = -1
+    A = 1.722*1.134   # Areal per panel !!! =1.953m^2
+    # Tap pga. varme
+    T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
+    T_noct = 45          #Varierer per paneltype, Celletemp test
+    T_a_noct = 20        # NOCT omgivelsestemp
+    Gt_noct = 800
+    ta = 0.9             # ta er 0.9 for silicon solar cell
+
+
+    test_list = []
+
+    for i,val in enumerate(Gb_n):
+            LST += 1
+            if LST == 24: LST = 0
+            N = 1 + int(i/24)
+            delta = 23.45 * sind(360/365*(284+N))
+            B = (N-81)*360/364
+            ET = 9.87*sind(2*B)-7.53*cosd(B)-1.5*sind(B)
+            AST = LST + ET/60 - 4/60*(SL-LL) # (-<_>-) når østlig halvkule
+            h = (AST - 12) * 15
+            alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
+            z = asind(cosd(delta)*sind(h)/cosd(alfa))
+            if Zs == 666 and beta == 666: #sjekker om det er roterende panelstativ. Da optimaliseres vinkelen.
+                theta = 0
+                beta = alfa
+            else:
+                theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
+                        +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
+                        +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
+            if N < 90 or N > 333: albedo = 0.65
+            else: albedo = 0.2
+
+            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
+            if G < 0: G = 0
+            P = G * n_sol
+
+            Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
+            tap_varme = T_tap_Pmpp*(Tc-T_noct)
+
+            produksjon = (P + tap_varme) * A * antal / 1000
+            
+            # if i < 48:
+            #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
+            test_list.append(produksjon)
+    return test_list
+
+def solprod_optimal(Gb_n, Gd_h, Ta, antal):
+    '''Solproduksjon ved optimal vinkling. Tar inn fil med soldata, areal, og vinkler. Bruker dette
     til å regne ut produksjonen fra solenergi. Gitt som kWh/h'''
     # faste verdier
     L = 60.61318
@@ -111,9 +168,10 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             h = (AST - 12) * 15
             alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
             z = asind(cosd(delta)*sind(h)/cosd(alfa))
-            theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
-                        +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
-                        +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
+            theta = 0#acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
+                     #   +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
+                     #   +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
+            beta = alfa
             if N < 90 or N > 333: albedo = 0.65
             else: albedo = 0.2
             

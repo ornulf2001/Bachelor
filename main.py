@@ -5,6 +5,7 @@ import numpy as np
 import datetime
 
 from funksjoner import *
+
 #%% ---Laster inn strømfil---
 fil_2 = 'Timesforbruk hele 2021 og 2022 V2.csv'
 fil_3 = 'Timesforbruk hele 2021 og 2022.csv'
@@ -286,4 +287,5 @@ plt.ylabel('Kostnad strøm [kr]')
 plt.show()
 print(len(batteri(1)))
 #%%
-ukesfordeling(batteri(100),dato,time)
+print(sum(forbruk))
+print(sum(batteri(100,forbruk,time)))
