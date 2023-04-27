@@ -21,12 +21,13 @@ def månedverdi(liste):
         start += 24*månedlengde[i]
     return månedliste
 
-def døgnfordeling(måned,døgn):
+def døgnfordeling(liste):
     '''Viser fordelingen av i løpet av timene i døgnet'''
     time = np.zeros(24)
+    døgn = int(len(liste)/24)
     for t in range(0,24):
         for d in range(0,døgn):
-            time[t] += måned[d*24+t]
+            time[t] += liste[d*24+t]
     time = time/døgn
     return time
 
@@ -137,16 +138,17 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             test_list.append(produksjon)
     return test_list
 
-def solprod_optimal(Gb_n, Gd_h, Ta, antal):
-    '''Solproduksjon ved optimal vinkling. Tar inn fil med soldata, areal, og vinkler. Bruker dette
-    til å regne ut produksjonen fra solenergi. Gitt som kWh/h'''
+def solprod_test(Gb_n, Gd_h, Ta, antal, Zs, beta):
+    '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
+    til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
+    roterende panelstativ, sett Zs og beta til 666'''
     # faste verdier
     L = 60.61318
     LL = 12.01088
     SL = 15
     n_sol = 0.205 # Virkningsgrad sol !!!
-    LST = -1
-    A = 1.722*1.134   # Areal per panel !!! =1.953m^2
+    LST = 0
+    A = 1   # Areal per panel !!! =1.953m^2
     # Tap pga. varme
     T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
     T_noct = 45          #Varierer per paneltype, Celletemp test
@@ -157,9 +159,9 @@ def solprod_optimal(Gb_n, Gd_h, Ta, antal):
 
     test_list = []
 
-    for i,val in enumerate(Gb_n):
+    for i in range(0,8760):
             LST += 1
-            if LST == 24: LST = 0
+            if LST == 25: LST = 1
             N = 1 + int(i/24)
             delta = 23.45 * sind(360/365*(284+N))
             B = (N-81)*360/364
@@ -168,26 +170,31 @@ def solprod_optimal(Gb_n, Gd_h, Ta, antal):
             h = (AST - 12) * 15
             alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
             z = asind(cosd(delta)*sind(h)/cosd(alfa))
-            theta = 0#acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
-                     #   +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
-                     #   +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
-            beta = alfa
+            if Zs == 666 or beta == 666: #sjekker om det er roterende panelstativ. Da optimaliseres vinkelen.
+                theta = 0
+                beta = 90 - alfa
+            else:
+                theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
+                        +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
+                        +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
             if N < 90 or N > 333: albedo = 0.65
             else: albedo = 0.2
-            
-            
+
             G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
             if G < 0: G = 0
             P = G * n_sol
 
-            Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
-            tap_varme = T_tap_Pmpp*(Tc-T_noct)
+            if G != 0:
+                Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
+                tap_varme = T_tap_Pmpp*(Tc-T_noct)
+            else: tap_varme = 0
 
             produksjon = (P + tap_varme) * A * antal / 1000
             
             # if i < 48:
             #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
             test_list.append(produksjon)
+            # print(f'LST: {round(LST,1)}, N: {round(N,1)}, delta: {round(delta,1)}, B: {round(B,1)}, ET: {round(ET,1)}, AST: {round(AST,1)}, h: {round(h,1)}, alfa: {round(alfa,1)}, theta: {round(theta,1)} beta: {round(beta,1)}, G: {round(G,1)}')
     return test_list
 
 def luft_tetthet(Ta,RH,SP):
@@ -251,7 +258,7 @@ def nettleie(strømforbruk):
         nettleie[i] = round(nettleie[i],2)
     return nettleie
 
-def batteri(kap,forbruk,time):
+def batteri(kap,forbruk,time_liste):
     '''Bruker batteri til å jamne ut strømforbruket'''
     DoD = 0.8
     E,V = 200,12.8 # Ah, V
@@ -266,21 +273,26 @@ def batteri(kap,forbruk,time):
     batterinivå = []
     ladestrøm = []
     nytt_forbruk = []
-    for i, val in enumerate(time):
+    for i, val in enumerate(time_liste):
         if i < 24*365:
             timenr = int(val)
+            strøm = 0
 
             if timenr >= 1 and timenr <= 6:
                 #charge
-                batterinivå_e = min(batterinivå_f + C_charge*tot_kap, tot_kap)
+                opplading = C_charge*tot_kap
+                batterinivå_e = min(batterinivå_f + opplading, tot_kap)
+                strøm = (batterinivå_e - batterinivå_f)/n_charge
             elif timenr >= 17 and timenr <= 22:
                 #discharge
-                batterinivå_e = max(batterinivå_f - C_discharge*tot_kap, tot_kap*(1-DoD))
+                utlading = C_discharge*tot_kap/n_discharge
+                batterinivå_e = max(batterinivå_f - utlading, tot_kap*(1-DoD))
+                strøm = (batterinivå_e - batterinivå_f)*n_discharge
             
             batterinivå.append(batterinivå_e)
             # print(f'I time {timenr} er batterinivå {batterinivå_e}')
-            ladestrøm.append(batterinivå_e - batterinivå_f)
-            nytt_forbruk.append(forbruk[i]+batterinivå_e - batterinivå_f)
+            ladestrøm.append(strøm)
+            nytt_forbruk.append(forbruk[i]+strøm)
             batterinivå_f = batterinivå_e
     return nytt_forbruk
 
