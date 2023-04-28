@@ -6,10 +6,10 @@ import datetime
 # import csv
 
 from funksjoner import *
-#%% ---Laster inn strømfil---
+#---Laster inn strømfil---
 fil_4 = 'Timesforbruk 2022 jan-nov og desember 2021.csv'
 df = pd.read_csv(fil_4, sep=';')
-#%%
+
 #---Lager egne lister for verdiene i strømforbruket---
 df.iloc[0]['Time']
 dato_liste = []
@@ -32,7 +32,7 @@ for i in range(0,len(df)):
 energiforbruk_liste.reverse()
 time_liste.reverse()
 dato_liste.reverse()
-#%%
+
 # --- TMY ---
 
 # Laster inn fil
@@ -47,7 +47,7 @@ Ta = df.iloc[:]['T2m']     # Dry bulb (air) temperature
 vindspeed = df.iloc[:]['WS10m'] # Windspeed
 RH = df.iloc[:]['RH'] # Relative humidity %
 SP = df.iloc[:]['SP'] # Surface (air) pressure
-#%%
+
 #---Strømpris---
 import locale
 locale.setlocale(locale.LC_ALL, '')
@@ -87,7 +87,19 @@ vindturbiner_h2 = 1
 bioandel = 0.21                 # % av strømforbruket som kan dekkes av bio
 batterikapasitet = 10           # kWh lagringskapasitet
 
-#%%
+#---Priser og kostnad---
+flis = 0.4 # kr/kWh
+#---Komponenter---
+PV_panel = 0
+vindturbin_v1 = 0
+vindturbin_v2 = 0
+vindturbin_h1 = 0
+vindturbin_h2 = 0
+batteribank = 0
+fliskjele = 0
+#---Installasjon---
+pris_sol = PV_panel*(paneler_roterende+paneler_nedre_restaurant+paneler_øvre_restaurant+paneler_fastmontert+paneler_roterende)
+
 # Regner ut solproduksjon
 sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_sanitær, Zs = 20, beta = 20)
 sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_nedre_restaurant, Zs = -60, beta = 15)
@@ -101,7 +113,7 @@ for i in range(0,8760):
     for anlegg in solanlegg:
         sol_prod_time += anlegg[i]
     total_solproduksjon.append(sol_prod_time)
-#%%
+
 # ---Vind---
 
 # sjekker produksjon fra ulike vindturbiner
@@ -116,7 +128,7 @@ for i in range(0,8760):
     for anlegg in vindanlegg:
         vind_prod_time += anlegg[i]
     total_vindproduksjon.append(vind_prod_time)
-#%%
+
 #---Flisfyring---
 n_bio = 0.8      # virkningsgrad bioanlegg
 V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
@@ -125,23 +137,25 @@ levert_energi = [verdi*bioandel for verdi in energiforbruk_liste]
 flis_energi = [verdi/n_bio for verdi in levert_energi]
 Vol_flis = [verdi/V_flis for verdi in flis_energi]
 
-#%%
+
 #---Energibalanse---
 energibalanse = []
 for i in range(0,8760):
     energi = energiforbruk_liste[i]-levert_energi[i]-total_solproduksjon[i]-total_vindproduksjon[i]
     energibalanse.append(energi)
 
-#%%
+
 #---Batteri---
 energibalanse = batteri(batterikapasitet,energibalanse,time_liste)
-#%%
+
 #---Beregning av kostnad---
 #---Nettleie---
 
 nettleie_kr = nettleie(energibalanse)
-totbruk = månedtot(energibalanse)
-nettleie_kr
 #---Strømkostnad---
-strømkostnaden = strømkostnad(energiforbruk_liste,strømpris_liste)
-#---Installasjon---
+strømkostnaden = strømkostnad(energibalanse,strømpris_liste,spotpris_liste)
+
+total_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis # + innstallasjonskostnad/levetid ? + vedlikehold
+print(f'Total kostnad før {sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste)+49*12+nettleie(energiforbruk_liste))} kr/år')
+print(f'Total kostnad etter {total_kostnad} kr/år')
+

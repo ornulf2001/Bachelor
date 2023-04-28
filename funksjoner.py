@@ -273,7 +273,7 @@ def batteri(kap,forbruk,time_liste):
     batterinivå = []
     ladestrøm = []
     nytt_forbruk = []
-    charging,discharging = False
+    charging,discharging = False,False
     for i, val in enumerate(time_liste):
         if i < 24*365:
             timenr = int(val)
@@ -306,10 +306,15 @@ def batteri(kap,forbruk,time_liste):
             ladestrøm.append(strøm)
             nytt_forbruk.append(forbruk[i]+strøm)
             batterinivå_f = batterinivå_e
-            charging,discharging,ikke_salg = False
+            charging,discharging,ikke_salg = False, False, False
     return nytt_forbruk
 
-def strømkostnad(forbruk,strømpris_liste):
+def strømkostnad(forbruk,strømpris_liste,spotpris_liste):
     '''Beregner kostnaden for strøm for hver time'''
-    strømkostnad = [forbruk[i]*strømpris_liste[i] for i in range(0,8760)]
+    strømkostnad = []
+    for i in range(0,8760):
+        if forbruk[i]>=0:
+            strømkostnad.append(forbruk[i]*strømpris_liste[i])
+        else:
+            strømkostnad.append(forbruk[i]*spotpris_liste[i])
     return strømkostnad

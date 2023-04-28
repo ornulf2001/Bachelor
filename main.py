@@ -113,7 +113,7 @@ print(f'Sum:'
       f'\n\tFast:        {sum(sol_fastmontert)}'
       f'\n\tRoterende:   {sum(sol_roterende)}')
 #%%
-#---Sjekk av soldritten---
+#---Sjekk av sol---
 def solprod_test2(Gb_n, Gd_h, Ta, antal, Zs, beta):
     '''Solproduksjon ved optimal vinkling. Tar inn fil med soldata, areal, og vinkler. Bruker dette
     til å regne ut produksjonen fra solenergi. Gitt som kWh/h'''
@@ -293,7 +293,7 @@ maks_prod = 0
 beste_vinkel = 0
 for i in range(15,30):
     vinkel = i
-    produksjon = sum(solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = vinkel))
+    produksjon = sum(solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = vinkel))
     if produksjon > maks_prod:
         maks_prod = produksjon
         beste_vinkel = vinkel
