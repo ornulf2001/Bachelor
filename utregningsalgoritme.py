@@ -48,30 +48,6 @@ vindspeed = df.iloc[:]['WS10m'] # Windspeed
 RH = df.iloc[:]['RH'] # Relative humidity %
 SP = df.iloc[:]['SP'] # Surface (air) pressure
 #%%
-# Regner ut solproduksjon
-sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 20, beta = 20)
-sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 15)
-sol_øvre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 35)
-sol_fastmontert = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 22)
-sol_roterende = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 666, beta = 666)
-#%%
-# ---Vind---
-
-# sjekker produksjon fra ulike vindturbiner
-vind_vertikal = vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,Cp=0.2,n_gen=0.9)
-vind_vertikal2 = vindprod(vindspeed,Ta,RH,SP, cut_in=3,cut_out=50,A = 1*1,Cp=0.2,n_gen=0.9)
-vind_horisontal = vindprod(vindspeed,Ta,RH,SP, cut_in= 3.1, cut_out= 49.2, A = 1.07, Cp = 0.385, n_gen = 0.9)
-vind_horisontal2 = vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
-#%%
-#---Flisfyring---
-bioandel = 0.21   # % av strømforbruket som kan dekkes av bio
-n_bio = 0.8      # virkningsgrad bioanlegg
-V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
-
-levert_energi = [verdi*bioandel for verdi in energiforbruk_liste]
-flis_energi = [verdi/n_bio for verdi in levert_energi]
-Vol_flis = [verdi/V_flis for verdi in flis_energi]
-#%%
 #---Strømpris---
 import locale
 locale.setlocale(locale.LC_ALL, '')
@@ -96,15 +72,69 @@ for i in range(0,8760):
     strømpris_liste.append(strømpris)
     spotpris_liste.append(spotpris_kr)
 #%%
+#---Variabler---
+paneler_sanitær = 1             # antall
+paneler_nedre_restaurant = 1
+paneler_øvre_restaurant = 1
+paneler_fastmontert = 1
+paneler_roterende = 1
+
+vindturbiner_v1 = 1             # antall
+vindturbiner_v2 = 1
+vindturbiner_h1 = 1
+vindturbiner_h2 = 1
+
+bioandel = 0.21                 # % av strømforbruket som kan dekkes av bio
+batterikapasitet = 10           # kWh lagringskapasitet
+
+#%%
+# Regner ut solproduksjon
+sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_sanitær, Zs = 20, beta = 20)
+sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_nedre_restaurant, Zs = -60, beta = 15)
+sol_øvre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_øvre_restaurant, Zs = -60, beta = 35)
+sol_fastmontert = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_fastmontert, Zs = 0, beta = 22)
+sol_roterende = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_roterende, Zs = 666, beta = 666)
+total_solproduksjon=[]
+solanlegg = [sol_sanitær, sol_nedre_restaurant, sol_øvre_restaurant, sol_fastmontert, sol_roterende]
+for i in range(0,8760):
+    sol_prod_time = 0
+    for anlegg in solanlegg:
+        sol_prod_time += anlegg[i]
+    total_solproduksjon.append(sol_prod_time)
+#%%
+# ---Vind---
+
+# sjekker produksjon fra ulike vindturbiner
+vind_vertikal = vindturbiner_v1 * vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,Cp=0.2,n_gen=0.9)
+vind_vertikal2 = vindturbiner_v2 * vindprod(vindspeed,Ta,RH,SP, cut_in=3,cut_out=50,A = 1*1,Cp=0.2,n_gen=0.9)
+vind_horisontal = vindturbiner_h1 * vindprod(vindspeed,Ta,RH,SP, cut_in= 3.1, cut_out= 49.2, A = 1.07, Cp = 0.385, n_gen = 0.9)
+vind_horisontal2 = vindturbiner_h2 * vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
+total_vindproduksjon=[]
+vindanlegg = [vind_vertikal, vind_vertikal2, vind_horisontal, vind_horisontal2]
+for i in range(0,8760):
+    vind_prod_time = 0
+    for anlegg in vindanlegg:
+        vind_prod_time += anlegg[i]
+    total_vindproduksjon.append(vind_prod_time)
+#%%
+#---Flisfyring---
+n_bio = 0.8      # virkningsgrad bioanlegg
+V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
+
+levert_energi = [verdi*bioandel for verdi in energiforbruk_liste]
+flis_energi = [verdi/n_bio for verdi in levert_energi]
+Vol_flis = [verdi/V_flis for verdi in flis_energi]
+
+#%%
 #---Energibalanse---
 energibalanse = []
 for i in range(0,8760):
-    energi = energiforbruk_liste[i]-levert_energi[i]-total_solproduksjon[i]-vind[i]
+    energi = energiforbruk_liste[i]-levert_energi[i]-total_solproduksjon[i]-total_vindproduksjon[i]
     energibalanse.append(energi)
 
 #%%
 #---Batteri---
-energibalanse = batteri(10,energibalanse,time_liste)
+energibalanse = batteri(batterikapasitet,energibalanse,time_liste)
 #%%
 #---Beregning av kostnad---
 #---Nettleie---
