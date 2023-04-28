@@ -280,10 +280,10 @@ def batteri(kap,forbruk,time_liste):
             strøm = 0
 
             if timenr >= 1 and timenr <= 6: charging
-            if timenr >= 17 and timenr <= 22: discharging
-            if forbruk[i] < 0:
+            elif forbruk[i] < 0:
                 charging = True
                 ikke_salg = True
+            if timenr >= 17 and timenr <= 22: discharging
 
             if charging:
                 #charge

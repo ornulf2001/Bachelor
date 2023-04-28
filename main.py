@@ -69,7 +69,6 @@ Ta = df.iloc[:]['T2m']     # Dry bulb (air) temperature
 vindspeed = df.iloc[:]['WS10m'] # Windspeed
 RH = df.iloc[:]['RH'] # Relative humidity %
 SP = df.iloc[:]['SP'] # Surface (air) pressure
-
 #%%
 #--- Sol ---
 A = 1 # Areal sol
@@ -182,14 +181,20 @@ print(sum(sol_2))
 # ---Vind---
 
 # sjekker produksjon fra ulike vindturbiner
-vind_vertikal = vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,Cp=0.385,n_gen=0.9)
+vind_vertikal = vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,Cp=0.2,n_gen=0.9)
+vind_vertikal2 = vindprod(vindspeed,Ta,RH,SP, cut_in=3,cut_out=50,A = 1*1,Cp=0.2,n_gen=0.9)
 vind_horisontal = vindprod(vindspeed,Ta,RH,SP, cut_in= 3.1, cut_out= 49.2, A = 1.07, Cp = 0.385, n_gen = 0.9)
 vind_horisontal2 = vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
 
 print(sum(vind_vertikal))
+print(sum(vind_vertikal2))
 print(sum(vind_horisontal))
+print(sum(vind_horisontal2))
+
 plt.plot(månedtot(vind_vertikal), label = 'Vertikal')
+plt.plot(månedtot(vind_vertikal2), label = 'Vertikal2')
 plt.plot(månedtot(vind_horisontal), label = 'Horisontal')
+plt.plot(månedtot(vind_horisontal2), label = 'Horisontal2')
 plt.xlabel('Time')
 plt.ylabel('kWh/mnd')
 plt.legend()
@@ -218,7 +223,7 @@ plt.grid()
 plt.show()
 #%%
 #---Flisfyring---
-bioandel = 0.2   # % av strømforbruket som kan dekkes av bio
+bioandel = 0.21   # % av strømforbruket som kan dekkes av bio
 n_bio = 0.8      # virkningsgrad bioanlegg
 V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
 
