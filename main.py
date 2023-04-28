@@ -77,11 +77,11 @@ Zs = 0 # Retning i forhold til SØR. Varierer per tak!!!
 beta = 20 # Helling på tak. Varierer
 
 # Regner ut solproduksjon
-sol_sanitær = solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = 20, beta = 20)
-sol_nedre_restaurant = solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 15)
-sol_øvre_restaurant = solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 35)
-sol_fastmontert = solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 22)
-sol_roterende = solprod_test(Gb_n, Gd_h, Ta, antal = 1, Zs = 666, beta = 666)
+sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 20, beta = 20)
+sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 15)
+sol_øvre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 35)
+sol_fastmontert = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 22)
+sol_roterende = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 666, beta = 666)
 print(len(sol_sanitær))
 total_solproduksjon=[]
 solanlegg = [sol_sanitær, sol_nedre_restaurant, sol_øvre_restaurant, sol_roterende]
@@ -184,13 +184,14 @@ print(sum(sol_2))
 # sjekker produksjon fra ulike vindturbiner
 vind_vertikal = vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,Cp=0.385,n_gen=0.9)
 vind_horisontal = vindprod(vindspeed,Ta,RH,SP, cut_in= 3.1, cut_out= 49.2, A = 1.07, Cp = 0.385, n_gen = 0.9)
+vind_horisontal2 = vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
 
 print(sum(vind_vertikal))
 print(sum(vind_horisontal))
 plt.plot(månedtot(vind_vertikal), label = 'Vertikal')
 plt.plot(månedtot(vind_horisontal), label = 'Horisontal')
 plt.xlabel('Time')
-plt.ylabel('kWh/h')
+plt.ylabel('kWh/mnd')
 plt.legend()
 # %%
 # --- Hvor mye blåser det? ---
@@ -224,9 +225,9 @@ V_flis = 750     # kWh/lm^3, energiinnhold bio per løskubikmeter
 levert_energi = [verdi*bioandel for verdi in forbruk]
 flis_energi = [verdi/n_bio for verdi in levert_energi]
 Vol_flis = [verdi/V_flis for verdi in flis_energi]
-# print(f'Energi fra bio: {round(sum(levert_energi))} kWh/år\nMaks effekt bio: {round(max(levert_energi))}')
-# print(f'Energi fra flis: {round(sum(flis_energi))} kWh/år\nMaks effekt flis: {round(max(flis_energi))}')
-# print(f'Mengde flis: {round(sum(Vol_flis))} lm^3/år\nMaks effekt kg_flis: {round(max(Vol_flis),2)}')
+print(f'Energi fra bio: {round(sum(levert_energi))} kWh/år\nMaks effekt bio: {round(max(levert_energi))}')
+print(f'Energi fra flis: {round(sum(flis_energi))} kWh/år\nMaks effekt flis: {round(max(flis_energi))}')
+print(f'Mengde flis: {round(sum(Vol_flis))} lm^3/år\nMaks effekt kg_flis: {round(max(Vol_flis),2)}')
 #%%
 #---Strømpris---
 import locale

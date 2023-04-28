@@ -138,7 +138,7 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
             test_list.append(produksjon)
     return test_list
 
-def solprod_test(Gb_n, Gd_h, Ta, antal, Zs, beta):
+def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
     '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
     til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
     roterende panelstativ, sett Zs og beta til 666'''
@@ -148,7 +148,7 @@ def solprod_test(Gb_n, Gd_h, Ta, antal, Zs, beta):
     SL = 15
     n_sol = 0.205 # Virkningsgrad sol !!!
     LST = 0
-    A = 1   # Areal per panel !!! =1.953m^2
+    A = 1.8   # Areal per panel !!! =1.953m^2
     # Tap pga. varme
     T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
     T_noct = 45          #Varierer per paneltype, Celletemp test
@@ -273,17 +273,29 @@ def batteri(kap,forbruk,time_liste):
     batterinivå = []
     ladestrøm = []
     nytt_forbruk = []
+    charging,discharging = False
     for i, val in enumerate(time_liste):
         if i < 24*365:
             timenr = int(val)
             strøm = 0
 
-            if timenr >= 1 and timenr <= 6:
+            if timenr >= 1 and timenr <= 6: charging
+            if timenr >= 17 and timenr <= 22: discharging
+            if forbruk[i] < 0:
+                charging = True
+                ikke_salg = True
+
+            if charging:
                 #charge
-                opplading = C_charge*tot_kap
-                batterinivå_e = min(batterinivå_f + opplading, tot_kap)
-                strøm = (batterinivå_e - batterinivå_f)/n_charge
-            elif timenr >= 17 and timenr <= 22:
+                if ikke_salg:
+                    opplading = forbruk[i]
+                    batterinivå_e = min(batterinivå_f + opplading, tot_kap)
+                    strøm = (batterinivå_e - batterinivå_f)/n_charge
+                else:
+                    opplading = C_charge*tot_kap
+                    batterinivå_e = min(batterinivå_f + opplading, tot_kap)
+                    strøm = (batterinivå_e - batterinivå_f)/n_charge
+            if discharging:
                 #discharge
                 utlading = C_discharge*tot_kap/n_discharge
                 batterinivå_e = max(batterinivå_f - utlading, tot_kap*(1-DoD))
@@ -294,6 +306,7 @@ def batteri(kap,forbruk,time_liste):
             ladestrøm.append(strøm)
             nytt_forbruk.append(forbruk[i]+strøm)
             batterinivå_f = batterinivå_e
+            charging,discharging,ikke_salg = False
     return nytt_forbruk
 
 def strømkostnad(forbruk,strømpris_liste):
