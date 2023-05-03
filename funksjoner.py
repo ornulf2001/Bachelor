@@ -146,11 +146,11 @@ def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
     L = 60.61318
     LL = 12.01088
     SL = 15
-    n_sol = 0.205 # Virkningsgrad sol !!!
+    n_sol = 0.20 # Virkningsgrad sol !!!
     LST = 0
-    A = 1.8   # Areal per panel !!! =1.953m^2
+    A = 1.755*1.038   # Areal per panel !!!
     # Tap pga. varme
-    T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
+    T_tap_Pmpp = -0.0035 #Varierer per paneltype, Temperaturkoefisient Pmpp
     T_noct = 45          #Varierer per paneltype, Celletemp test
     T_a_noct = 20        # NOCT omgivelsestemp
     Gt_noct = 800
@@ -279,16 +279,16 @@ def batteri(kap,forbruk,time_liste):
             timenr = int(val)
             strøm = 0
 
-            if timenr >= 1 and timenr <= 6: charging
+            if timenr >= 1 and timenr <= 6: charging = True
             elif forbruk[i] < 0:
                 charging = True
                 ikke_salg = True
-            if timenr >= 17 and timenr <= 22: discharging
+            if timenr >= 17 and timenr <= 22: discharging = True
 
             if charging:
                 #charge
                 if ikke_salg:
-                    opplading = forbruk[i]
+                    opplading = -forbruk[i]
                     batterinivå_e = min(batterinivå_f + opplading, tot_kap)
                     strøm = (batterinivå_e - batterinivå_f)/n_charge
                 else:

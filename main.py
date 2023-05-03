@@ -76,7 +76,7 @@ Zs = 0 # Retning i forhold til SØR. Varierer per tak!!!
 beta = 20 # Helling på tak. Varierer
 
 # Regner ut solproduksjon
-sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 20, beta = 20)
+sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 20)
 sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 15)
 sol_øvre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 35)
 sol_fastmontert = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 22)
