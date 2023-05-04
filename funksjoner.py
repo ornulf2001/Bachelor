@@ -82,7 +82,7 @@ cosd = lambda degrees: np.cos(np.deg2rad(degrees))
 asind = lambda degrees: np.rad2deg(np.arcsin(degrees))
 acosd = lambda degrees: np.rad2deg(np.arccos(degrees))
 
-def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
+def solprod_eksperimentell(Gb_n, Gd_h, Ta, antal, Zs, beta):
     '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
     til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
     roterende panelstativ, sett Zs og beta til 666'''
@@ -104,6 +104,7 @@ def solprod(Gb_n, Gd_h, Ta, antal, Zs, beta):
     test_list = []
 
     for i,val in enumerate(Gb_n):
+        
             LST += 1
             if LST == 24: LST = 0
             N = 1 + int(i/24)

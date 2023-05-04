@@ -74,7 +74,7 @@ for i in range(0,8760):
 print('Lister er lastet inn')
 #%%
 #              san, nedre, øvre, fast, rot, bio, batt
-energikilde = [  1,     1,    1,    1,   1,   1,  100]
+energikilde = [  1,     1,    1,    0,   0,   0,  0]
 
 #---Variabler---
 paneler_sanitær = 28             # antall
@@ -88,37 +88,40 @@ vindturbiner_v2 = 0
 vindturbiner_h1 = 0
 vindturbiner_h2 = 0
 
-bioandel = 0.21*energikilde[5]                 # % av strømforbruket som kan dekkes av bio
-batterikapasitet = energikilde[6]           # kWh lagringskapasitet
+bioandel = 0.21*energikilde[5]          # % av strømforbruket som kan dekkes av bio
+batterikapasitet = energikilde[6]       # kWh lagringskapasitet
 
 #---Priser og kostnad---
-flis_pris = 0.4 # kr/kWh
+flis_pris = 0.4   # kr/kWh
 #---Komponenter---
 PV_panel = 2279
 festeklemme = 29
 festeskinne = 595
+fast_stativ = 33500
+rot_stativ = 100000
 inverter = 15000
 sol_installasjon = 50000
 
-PV_tak_sanitær = festeskinne*24+festeklemme*96+inverter+PV_panel*paneler_sanitær+sol_installasjon
-PV_tak_nedre = festeskinne*15+festeklemme*66+inverter+PV_panel*paneler_nedre_restaurant+sol_installasjon
-PV_tak_øvre = festeskinne*24+festeklemme*102+inverter+PV_panel*paneler_øvre_restaurant+sol_installasjon
-PV_fri = 33500+inverter+paneler_fastmontert*PV_panel+sol_installasjon
-PV_rot = 100000+inverter+PV_panel*paneler_roterende+sol_installasjon
+PV_tak_sanitær = festeskinne*24+festeklemme*96+PV_panel*paneler_sanitær+sol_installasjon
+PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon
+PV_tak_øvre = festeskinne*24+festeklemme*102+PV_panel*paneler_øvre_restaurant+sol_installasjon
+PV_fri = fast_stativ+paneler_fastmontert*PV_panel+sol_installasjon
+PV_rot = rot_stativ+PV_panel*paneler_roterende+sol_installasjon
 
-vindturbin_v1 = 16580
-vindturbin_v2 = 17620
-vindturbin_h1 = 12600
-vindturbin_h2 = 20270
-installasjon_vind = 0
+# vindturbin_v1 = 16580
+# vindturbin_v2 = 17620
+# vindturbin_h1 = 12600
+# vindturbin_h2 = 20270
+# installasjon_vind = 0
 batteribank = 4595/(12*260)*1000*batterikapasitet  #kr/kWh * kWh
 installasjon_batteri = 10000*min(1,energikilde[6])
 fliskjele = 800000
 installasjon_bio = 500000
 #---Installasjon---
 pris_sol = PV_tak_sanitær*energikilde[0] + PV_tak_nedre*energikilde[1] + PV_tak_øvre*energikilde[2] + PV_fri*energikilde[3] + PV_rot*energikilde[4]
+pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,energikilde[3])+min(1,energikilde[4])+min(1,energikilde[6]))
 
-installasjonskostnader = pris_sol/30 + (batteribank+installasjon_batteri)/4 + energikilde[5]*(fliskjele+installasjon_bio)/30
+installasjonskostnader = pris_sol + pris_invertere + (batteribank+installasjon_batteri) + energikilde[5]*(fliskjele+installasjon_bio)
 # Regner ut solproduksjon
 sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_sanitær, Zs = 20, beta = 20)
 sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = paneler_nedre_restaurant, Zs = -60, beta = 15)
@@ -190,14 +193,15 @@ nettleie_kr = nettleie(energibalanse2)
 #---Strømkostnad---
 strømkostnaden = strømkostnad(energibalanse2,strømpris_liste,spotpris_liste)
 
-total_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
-print(f'Total kostnad før {sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste))} kr/år ekskl. MVA')
-print(f'Total kostnad etter {total_kostnad} kr/år ekskl. MVA')
+total_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris# + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
+print(f'Total årlig kostnad før {sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste))} kr/år ekskl. MVA')
+print(f'Total årlig kostnad etter {total_kostnad} kr/år ekskl. MVA')
+print(f'Installasjonskostnader: {installasjonskostnader}')
 print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse2))}')
 print(f'Strømforbruk: {sum(energibalanse2)}'
       f'\nKjøpt strøm:  {sum(kjøpt_strøm)}'
       f'\nSolgt strøm:    {sum(solgt_strøm)}')
-print(f'Bio\n'
+print(f'\nBio\n'
       f'\tInstallasjon/år: {energikilde[5]*(fliskjele+installasjon_bio)/30}\n'
       f'\tKostnad flis:    {sum(flis_energi)*flis_pris}\n'
       f'\tBespart:         {sum(strømkostnad(levert_energi,strømpris_liste,spotpris_liste))}')

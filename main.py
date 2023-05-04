@@ -70,6 +70,10 @@ vindspeed = df.iloc[:]['WS10m'] # Windspeed
 RH = df.iloc[:]['RH'] # Relative humidity %
 SP = df.iloc[:]['SP'] # Surface (air) pressure
 #%%
+alfa = solprod_eksperimentell(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 20)
+plt.plot(alfa[:])
+plt.show()
+#%%
 #--- Sol ---
 A = 1 # Areal sol
 Zs = 0 # Retning i forhold til SØR. Varierer per tak!!!
