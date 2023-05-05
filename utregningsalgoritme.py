@@ -73,6 +73,8 @@ for i in range(0,8760):
     spotpris_liste.append(spotpris_kr)
 print('Lister er lastet inn')
 #%%
+import time
+start_tid = time.time()
 #              san, nedre, øvre, fast, rot, bio, batt
 energikilde = [  1,     1,    1,    0,   0,   0,  0]
 
@@ -199,8 +201,8 @@ nettleie_kr = nettleie(energibalanse_batt)
 strømkostnaden = strømkostnad(energibalanse_batt,strømpris_liste,spotpris_liste)
 total_årlig_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris# + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
 
-print(f'Total årlig kostnad før {round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))} kr/år ekskl. MVA')
-print(f'Total årlig kostnad etter {round(total_årlig_kostnad)} kr/år ekskl. MVA')
+print(f'Total årlig kostnad før {1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))} kr/år ekskl. MVA')
+print(f'Total årlig kostnad etter {1.25*round(total_årlig_kostnad)} kr/år ekskl. MVA\n')
 print(f'Installasjonskostnader: {installasjonskostnader}')
 print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse_batt))}')
 print(f'Strømforbruk: {sum(energibalanse_batt)}'
@@ -210,3 +212,5 @@ print(f'\nBio\n'
       f'\tInstallasjon/år: {energikilde[5]*(fliskjele+installasjon_bio)/30}\n'
       f'\tKostnad flis:    {sum(flis_energi)*flis_pris}\n'
       f'\tBespart:         {sum(strømkostnad(levert_energi,strømpris_liste,spotpris_liste))}')
+slutt_tid = time.time()
+print(f'Tid brukt på denne konen: {slutt_tid-start_tid} sek')
