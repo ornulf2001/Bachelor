@@ -82,7 +82,7 @@ cosd = lambda degrees: np.cos(np.deg2rad(degrees))
 asind = lambda degrees: np.rad2deg(np.arcsin(degrees))
 acosd = lambda degrees: np.rad2deg(np.arccos(degrees))
 
-def solprod_eksperimentell(Gb_n, Gd_h, Ta, antal, Zs, beta):
+def solprod_eksperimentell(Gb_n, Gd_h, Ta, antal, Zs, beta, hvilken_verdi):
     '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
     til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
     roterende panelstativ, sett Zs og beta til 666'''
@@ -136,7 +136,12 @@ def solprod_eksperimentell(Gb_n, Gd_h, Ta, antal, Zs, beta):
             
             # if i < 48:
             #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
-            test_list.append(produksjon)
+            if hvilken_verdi == 'produksjon':
+                test_list.append(produksjon)
+            elif hvilken_verdi == 'alfa':
+                test_list.append(alfa)
+            else:
+                print('Den verdien er ikke definert')
     return test_list
 
 def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
@@ -148,6 +153,7 @@ def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
     LL = 12.01088
     SL = 15
     n_sol = 0.20 # Virkningsgrad sol !!!
+    n_inverter = 0.97
     LST = 0
     A = 1.755*1.038   # Areal per panel !!!
     # Tap pga. varme
@@ -190,7 +196,7 @@ def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
                 tap_varme = T_tap_Pmpp*(Tc-T_noct)
             else: tap_varme = 0
 
-            produksjon = (P + tap_varme) * A * antal / 1000
+            produksjon = (P + tap_varme) * A * antal / 1000 * n_inverter
             
             # if i < 48:
             #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')

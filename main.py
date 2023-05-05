@@ -70,7 +70,7 @@ vindspeed = df.iloc[:]['WS10m'] # Windspeed
 RH = df.iloc[:]['RH'] # Relative humidity %
 SP = df.iloc[:]['SP'] # Surface (air) pressure
 #%%
-alfa = solprod_eksperimentell(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 20)
+alfa = solprod_eksperimentell(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 20, hvilken_verdi='alfa')
 plt.plot(alfa[:])
 plt.show()
 #%%
@@ -100,15 +100,15 @@ print(sum(sol_sanitær)+sum(sol_nedre_restaurant)+sum(sol_øvre_restaurant)+sum(
 # plt.plot(døgnfordeling(total_solproduksjon))
 # plt.show()
 
-plt.plot(døgnfordeling(sol_sanitær), label = 'Sanitærbygg')
-plt.plot(døgnfordeling(sol_nedre_restaurant), label = 'Nedre tak rets.')
-plt.plot(døgnfordeling(sol_øvre_restaurant), label = 'Øvre tak rets.')
+# plt.plot(døgnfordeling(sol_sanitær), label = 'Sanitærbygg')
+# plt.plot(døgnfordeling(sol_nedre_restaurant), label = 'Nedre tak rest.')
+# plt.plot(døgnfordeling(sol_øvre_restaurant), label = 'Øvre tak rest.')
 # plt.plot(døgnfordeling(sol_roterende), label = 'Roterende')
 # plt.plot(døgnfordeling(sol_fastmontert), label = 'Fastmontert')
-# plt.plot(døgnfordeling(Gb_n/1000), label = 'Beam')
-# plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffuse')
+plt.plot(døgnfordeling(Gb_n/1000), label = 'Beam')
+plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffuse')
 plt.xlabel('Time')
-plt.ylabel('kWh/h')
+plt.ylabel('Innstråling [kWh/h]')
 plt.legend()
 print(f'Sum:'
       f'\n\tSanitær:     {sum(sol_sanitær)}'
@@ -189,18 +189,21 @@ vind_vertikal = vindprod(vindspeed,Ta,RH,SP, cut_in=4,cut_out=50,A = 0.64*0.79,C
 vind_vertikal2 = vindprod(vindspeed,Ta,RH,SP, cut_in=3,cut_out=50,A = 1*1,Cp=0.2,n_gen=0.9)
 vind_horisontal = vindprod(vindspeed,Ta,RH,SP, cut_in= 3.1, cut_out= 49.2, A = 1.07, Cp = 0.385, n_gen = 0.9)
 vind_horisontal2 = vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
+vind = []
+for i in range(0,8760):
+    vind.append(vind_vertikal[i]+vind_vertikal2[i]+vind_horisontal[i]+vind_horisontal2[i])
 
 print(sum(vind_vertikal))
 print(sum(vind_vertikal2))
 print(sum(vind_horisontal))
 print(sum(vind_horisontal2))
 
-plt.plot(månedtot(vind_vertikal), label = 'Vertikal')
-plt.plot(månedtot(vind_vertikal2), label = 'Vertikal2')
-plt.plot(månedtot(vind_horisontal), label = 'Horisontal')
-plt.plot(månedtot(vind_horisontal2), label = 'Horisontal2')
-plt.xlabel('Time')
-plt.ylabel('kWh/mnd')
+plt.plot(måneder,månedtot(vind_vertikal), label = 'Atlas X7 (V)')
+plt.plot(månedtot(vind_vertikal2), label = 'Atlas 7 (V)')
+plt.plot(månedtot(vind_horisontal), label = 'Master 1kW (H)')
+plt.plot(månedtot(vind_horisontal2), label = 'Magnum 5 (H)')
+plt.xlabel('Måned')
+plt.ylabel('Produksjon [kWh]')
 plt.legend()
 # %%
 # --- Hvor mye blåser det? ---
@@ -321,7 +324,7 @@ beste_vinkel = 0
 for i in [-40,-20,-10,-5,0,5,10,20,40]:
     vinkel = i
     # print(vinkel)
-    produksjon = sum(solprod(Gb_n, Gd_h, Ta, antal = 1, Zs = vinkel, beta = 22))
+    produksjon = sum(solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = vinkel, beta = 22))
     # print(produksjon)
     if produksjon > maks_prod:
         maks_prod = produksjon
@@ -338,14 +341,14 @@ plt.title('Beta-vinkel optimalisering')
 plt.show()
 print(f'Beste vinkel er {beste_vinkel}')
 #%%
-print(f'Optimal vinkel gir: {sum(solprod(Gb_n,Gd_h,Ta,1,-20,22))}')
-print(f'Uoptimal vinkel gir: {sum(solprod(Gb_n,Gd_h,Ta,1,0,0))}')
+print(f'Optimal vinkel gir: {sum(solprod_2(Gb_n,Gd_h,Ta,1,-20,22))}')
+print(f'Uoptimal vinkel gir: {sum(solprod_2(Gb_n,Gd_h,Ta,1,0,0))}')
 
 #%%
 maks_prod = 0
 for beta in range(21,23):
     for Z in range(-21,-19):
-        prod = sum(solprod(Gb_n,Gd_h,Ta,1,Z,beta))
+        prod = sum(solprod_2(Gb_n,Gd_h,Ta,1,Z,beta))
         if prod > maks_prod:
             tekst = f'Maks produksjon er {prod}, ved Zs = {Z} og beta = {beta}'
         print('running')
@@ -373,7 +376,7 @@ print(sum(forbruk))
 # plt.show()
 
 #%%
-print(f'Nettleie før = {sum(nettleie(forbruk))}\nNettleie etter = {sum(nettleie(nytt_forbruk))}')
+# print(f'Nettleie før = {sum(nettleie(forbruk))}\nNettleie etter = {sum(nettleie(nytt_forbruk))}')
 
 #%%
 #---Kostnad strøm---
