@@ -77,6 +77,7 @@ import time
 start_tid = time.time()
 #              san, nedre, øvre, fast, rot, bio, batt
 energikilde = [  1,     1,    1,    1,   1,   1,  100]
+#              0/1     0/1   0/1  fast/rot/0 0/1   kWh
 
 #---Variabler---
 paneler_sanitær = 28             # antall
@@ -202,8 +203,8 @@ strømkostnaden = strømkostnad(energibalanse_batt,strømpris_liste,spotpris_lis
 total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
 total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
-print(f'Total årlig kostnad før {total_årlig_kostnad_før} kr/år ekskl. MVA')
-print(f'Total årlig kostnad etter {total_årlig_kostnad_etter} kr/år ekskl. MVA')
+print(f'Total årlig kostnad før {total_årlig_kostnad_før} kr/år inkl. MVA')
+print(f'Total årlig kostnad etter {total_årlig_kostnad_etter} kr/år inkl. MVA')
 print(f'Kostnadsdifferanse: {total_årlig_kostnad_før-total_årlig_kostnad_etter}')
 print(f'\nInstallasjonskostnader: {installasjonskostnader}')
 print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse_batt))}')
@@ -215,4 +216,4 @@ print(f'\nBio\n'
       f'\tKostnad flis:    {sum(flis_energi)*flis_pris}\n'
       f'\tBespart:         {sum(strømkostnad(levert_energi,strømpris_liste,spotpris_liste))}')
 slutt_tid = time.time()
-print(f'Tid brukt på denne konen: {slutt_tid-start_tid} sek')
+print(f'Tid brukt på denne koden: {slutt_tid-start_tid} sek')
