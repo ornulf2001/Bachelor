@@ -162,43 +162,48 @@ flis_energi = [verdi/n_bio for verdi in levert_energi]
 Vol_flis = [verdi/V_flis for verdi in flis_energi]
 
 
-#---Energibalanse---
+#---Energibalanse før batteri---
 energibalanse = []
-kjøpt_strøm = []
-solgt_strøm = []
+
 for i in range(0,8760):
     energi = energiforbruk_liste[i]-levert_energi[i]-total_solproduksjon[i]-total_vindproduksjon[i]
     if energi >= 0:
         energibalanse.append(energi)
+    else:
+        energibalanse.append(energi)
+
+#---Batteri---
+energibalanse_batt = batteri(batterikapasitet,energibalanse,time_liste)
+#---Energibalanse etter batteri---
+kjøpt_strøm = []
+solgt_strøm = []
+for energi in energibalanse_batt:
+    if energi >= 0:
         kjøpt_strøm.append(energi)
         solgt_strøm.append(0)
     else:
-        energibalanse.append(energi)
         kjøpt_strøm.append(0)
         solgt_strøm.append(-energi)
 
-
-#---Batteri---
-energibalanse2 = batteri(batterikapasitet,energibalanse,time_liste)
-
+#---Plot---
 
 plt.plot(døgnfordeling(energiforbruk_liste))
 plt.plot(døgnfordeling(energibalanse))
-plt.plot(døgnfordeling(energibalanse2))
+plt.plot(døgnfordeling(energibalanse_batt))
 plt.show()
 #---Beregning av kostnad---
 #---Nettleie---
 
-nettleie_kr = nettleie(energibalanse2)
+nettleie_kr = nettleie(energibalanse_batt)
 #---Strømkostnad---
-strømkostnaden = strømkostnad(energibalanse2,strømpris_liste,spotpris_liste)
+strømkostnaden = strømkostnad(energibalanse_batt,strømpris_liste,spotpris_liste)
+total_årlig_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris# + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
 
-total_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris# + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
-print(f'Total årlig kostnad før {sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste))} kr/år ekskl. MVA')
-print(f'Total årlig kostnad etter {total_kostnad} kr/år ekskl. MVA')
+print(f'Total årlig kostnad før {round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))} kr/år ekskl. MVA')
+print(f'Total årlig kostnad etter {round(total_årlig_kostnad)} kr/år ekskl. MVA')
 print(f'Installasjonskostnader: {installasjonskostnader}')
-print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse2))}')
-print(f'Strømforbruk: {sum(energibalanse2)}'
+print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse_batt))}')
+print(f'Strømforbruk: {sum(energibalanse_batt)}'
       f'\nKjøpt strøm:  {sum(kjøpt_strøm)}'
       f'\nSolgt strøm:    {sum(solgt_strøm)}')
 print(f'\nBio\n'
