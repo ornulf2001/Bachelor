@@ -76,7 +76,7 @@ print('Lister er lastet inn')
 import time
 start_tid = time.time()
 #              san, nedre, øvre, fast, rot, bio, batt
-energikilde = [  1,     1,    1,    0,   0,   0,  0]
+energikilde = [  1,     1,    1,    1,   1,   1,  100]
 
 #---Variabler---
 paneler_sanitær = 28             # antall
@@ -199,11 +199,13 @@ plt.show()
 nettleie_kr = nettleie(energibalanse_batt)
 #---Strømkostnad---
 strømkostnaden = strømkostnad(energibalanse_batt,strømpris_liste,spotpris_liste)
-total_årlig_kostnad = sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris# + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
+total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
+total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
-print(f'Total årlig kostnad før {1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))} kr/år ekskl. MVA')
-print(f'Total årlig kostnad etter {1.25*round(total_årlig_kostnad)} kr/år ekskl. MVA\n')
-print(f'Installasjonskostnader: {installasjonskostnader}')
+print(f'Total årlig kostnad før {total_årlig_kostnad_før} kr/år ekskl. MVA')
+print(f'Total årlig kostnad etter {total_årlig_kostnad_etter} kr/år ekskl. MVA')
+print(f'Kostnadsdifferanse: {total_årlig_kostnad_før-total_årlig_kostnad_etter}')
+print(f'\nInstallasjonskostnader: {installasjonskostnader}')
 print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse_batt))}')
 print(f'Strømforbruk: {sum(energibalanse_batt)}'
       f'\nKjøpt strøm:  {sum(kjøpt_strøm)}'
