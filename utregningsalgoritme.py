@@ -202,7 +202,7 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0])
 
 
 
-    return NNVe,installasjonskostnader
+    return NNVe,installasjonskostnader,min(energibalanse_batt)
 
 def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0]):
 #                                     0/1     0/1   0/1  fast/rot/0 0/1   kWh   antall
@@ -344,20 +344,21 @@ for sanitær in [0,1]:
                     if rot != 0:
                         fast = 0
                     for bio in [0,1]:
-                        for batt in [0,100,200]:
-                            for vind in [0,1,2,3]:
+                        for batt in [0]:
+                            for vind in [0]:
                                 energikilder = [sanitær,nedre,øvre,fast,rot,bio,batt,vind]
                                 scenario = lønnsomhet(energikilder)
                                 NNVe = scenario[0]
                                 string = str(energikilder)
-                                scenarioer[string] = scenario[0]
-                                # print(scenarioer)
-                                scenarioer = sorted(scenarioer.items(), key=lambda x:x[1], reverse = True)
-                                # print(scenarioer)
-                                if len(scenarioer)>10:
+                                if scenario[2]>-50:
+                                    scenarioer[string] = scenario[0]
                                     # print(scenarioer)
-                                    scenarioer.pop()
-                                scenarioer = dict(scenarioer)
+                                    scenarioer = sorted(scenarioer.items(), key=lambda x:x[1], reverse = True)
+                                    # print(scenarioer)
+                                    if len(scenarioer)>10:
+                                        # print(scenarioer)
+                                        scenarioer.pop()
+                                    scenarioer = dict(scenarioer)
 
                                 # if scenario[0] > NNVe_best:
                                 #     NNVe_nestbest = NNVe_best
