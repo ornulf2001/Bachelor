@@ -4,7 +4,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import datetime
 # import csv
-
 from funksjoner import *
 
 #%% ---Laster inn strømfil---
@@ -80,7 +79,7 @@ Zs = 0 # Retning i forhold til SØR. Varierer per tak!!!
 beta = 20 # Helling på tak. Varierer
 
 # Regner ut solproduksjon
-sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 20)
+sol_sanitær = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 29, beta = 25)
 sol_nedre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 15)
 sol_øvre_restaurant = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = -60, beta = 35)
 sol_fastmontert = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 0, beta = 22)
@@ -100,13 +99,13 @@ print(sum(sol_sanitær)+sum(sol_nedre_restaurant)+sum(sol_øvre_restaurant)+sum(
 # plt.plot(døgnfordeling(total_solproduksjon))
 # plt.show()
 
-# plt.plot(døgnfordeling(sol_sanitær), label = 'Sanitærbygg')
-# plt.plot(døgnfordeling(sol_nedre_restaurant), label = 'Nedre tak rest.')
-# plt.plot(døgnfordeling(sol_øvre_restaurant), label = 'Øvre tak rest.')
+plt.plot(døgnfordeling(sol_sanitær), label = 'Sanitærbygg')
+plt.plot(døgnfordeling(sol_nedre_restaurant), label = 'Nedre tak rest.')
+plt.plot(døgnfordeling(sol_øvre_restaurant), label = 'Øvre tak rest.')
 # plt.plot(døgnfordeling(sol_roterende), label = 'Roterende')
 # plt.plot(døgnfordeling(sol_fastmontert), label = 'Fastmontert')
-plt.plot(døgnfordeling(Gb_n/1000), label = 'Beam')
-plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffuse')
+# plt.plot(døgnfordeling(Gb_n/1000), label = 'Beam')
+# plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffuse')
 plt.xlabel('Time')
 plt.ylabel('Innstråling [kWh/h]')
 plt.legend()
@@ -250,6 +249,7 @@ spotpris_21 = 'spotprisoslo21-mod.csv'
 spotpris_21_liste = pd.read_csv(spotpris_21, sep=';')
 påslag = 0.049 # kr/kWh
 strømpris_liste = []
+spotpris_liste = []
 
 for i in range(0,8760):
     dag = int(i/24)
@@ -263,6 +263,7 @@ for i in range(0,8760):
     # print(dag)
     strømpris = spotpris_kr + påslag
     strømpris_liste.append(strømpris)
+    spotpris_liste.append(spotpris_kr)
     # print(f'Strmømpris dag {dag+1} i time {time} er {strømpris} kr/MWh')
 # print(strømpris_liste[8759])
 # plt.plot(døgnfordeling(strømpris_liste,365))
@@ -390,14 +391,14 @@ print(f'Strømkostnad uten batteri: {sum(strømkostnad(forbruk))}\nStrømkostnad
 #%%
 batteristørrelse = []
 strømkost = []
-for i in range(0,10000):
+for i in range(0,10):
     batteristørrelse.append(i)
-    strømkost.append(sum(strømkostnad(batteri(i))))
+    strømkost.append(sum(strømkostnad(batteri(i,forbruk,time_liste),strømpris_liste,spotpris_liste)))
 plt.plot(batteristørrelse,strømkost)
 plt.xlabel('Batteristørrelse [kWh]')
 plt.ylabel('Kostnad strøm [kr]')
 plt.show()
-print(len(batteri(1)))
+# print(len(batteri(1)))
 #%%
 print(sum(forbruk))
 print(sum(batteri(100,forbruk,time_liste)))
@@ -405,17 +406,20 @@ print(sum(batteri(100,forbruk,time_liste)))
 batteristørrelse = 100
 plt.plot(døgnfordeling(forbruk), label = 'Uten batteri')
 plt.plot(døgnfordeling(batteri(batteristørrelse,forbruk,time_liste)), label = 'Med batteri')
+plt.plot(døgnfordeling(batteri_2(batteristørrelse,forbruk,time_liste)), label = 'Med batteri ideell')
 plt.xlabel('Time')
-plt.ylabel('kWh/h')
+plt.ylabel('kWh')
 plt.legend()
 
 plt.show()
 
-plt.plot(døgnfordeling(strømkostnad(forbruk,strømpris_liste)), label = 'Uten batteri')
-plt.plot(døgnfordeling(strømkostnad(batteri(batteristørrelse,forbruk,time_liste),strømpris_liste)), label = 'Med batteri')
+plt.plot(døgnfordeling(strømkostnad(forbruk,strømpris_liste,spotpris_liste)), label = 'Uten batteri')
+plt.plot(døgnfordeling(strømkostnad(batteri(batteristørrelse,forbruk,time_liste),strømpris_liste,spotpris_liste)), label = 'Med batteri')
+plt.plot(døgnfordeling(strømkostnad(batteri_2(batteristørrelse,forbruk,time_liste),strømpris_liste,spotpris_liste)), label = 'Med batteri ideell')
 plt.xlabel('Time')
-plt.ylabel('kr/h')
+plt.ylabel('kr')
 plt.legend()
 
 plt.show()
-print(f'Strømkostnad\n\tUten batteri: {round(sum(strømkostnad(forbruk,strømpris_liste)),1)}\n\tMed batteri:  {round(sum(strømkostnad(batteri(batteristørrelse,forbruk,time_liste),strømpris_liste)),1)}')
+print(f'Strømforbruk [kWh/år]\n\tUten batteri:   {round(sum(forbruk),1)}\n\tMed batteri:    {round(sum(batteri(batteristørrelse,forbruk,time_liste)),1)}\n\tMed batteri ideell:  {round(sum(batteri_2(batteristørrelse,forbruk,time_liste)),1)}')
+print(f'Strømkostnad [kr/år]\n\tUten batteri:   {round(sum(strømkostnad(forbruk,strømpris_liste,spotpris_liste)),1)}\n\tMed batteri:    {round(sum(strømkostnad(batteri(batteristørrelse,forbruk,time_liste),strømpris_liste,spotpris_liste)),1)}\n\tMed batteri ideell:  {round(sum(strømkostnad(batteri_2(batteristørrelse,forbruk,time_liste),strømpris_liste,spotpris_liste)),1)}')

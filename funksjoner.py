@@ -272,15 +272,66 @@ def batteri(kap,forbruk,time_liste):
     #kapasitet = 8*2.56 # kWh
     antall = 10
     tot_kap = kap# * antall
-    n_charge = 0.9
-    n_discharge = 0.9
+    n_charge = 0.7
+    n_discharge = 0.7
     C_charge = 1/7
     C_discharge = 1/7
     batterinivå_f,batterinivå_e = 0,0
     batterinivå = []
     ladestrøm = []
     nytt_forbruk = []
-    charging,discharging = False,False
+    charging,discharging,ikke_salg = False,False,False
+    for i, val in enumerate(time_liste):
+        if i < 24*365:
+            timenr = int(val)
+            strøm = 0
+
+            if timenr >= 1 and timenr <= 6: charging = True
+            elif forbruk[i] < 0:
+                charging = True
+                ikke_salg = True
+            if timenr >= 17 and timenr <= 22: discharging = True
+
+            if charging:
+                #charge
+                if ikke_salg:
+                    opplading = -forbruk[i]
+                    batterinivå_e = min(batterinivå_f + opplading, tot_kap)
+                    strøm = (batterinivå_e - batterinivå_f)/n_charge
+                else:
+                    opplading = C_charge*tot_kap
+                    batterinivå_e = min(batterinivå_f + opplading, tot_kap)
+                    strøm = (batterinivå_e - batterinivå_f)/n_charge
+            if discharging:
+                #discharge
+                utlading = C_discharge*tot_kap/n_discharge
+                batterinivå_e = max(batterinivå_f - utlading, tot_kap*(1-DoD))
+                strøm = (batterinivå_e - batterinivå_f)*n_discharge
+            
+            batterinivå.append(batterinivå_e)
+            # print(f'I time {timenr} er batterinivå {batterinivå_e}')
+            ladestrøm.append(strøm)
+            nytt_forbruk.append(forbruk[i]+strøm)
+            batterinivå_f = batterinivå_e
+            charging,discharging,ikke_salg = False, False, False
+    return nytt_forbruk
+
+def batteri_2(kap,forbruk,time_liste):
+    '''Bruker batteri til å jamne ut strømforbruket'''
+    DoD = 0.8
+    E,V = 200,12.8 # Ah, V
+    #kapasitet = 8*2.56 # kWh
+    antall = 10
+    tot_kap = kap# * antall
+    n_charge = 1#0.7
+    n_discharge = 1#0.7
+    C_charge = 1/7
+    C_discharge = 1/7
+    batterinivå_f,batterinivå_e = 0,0
+    batterinivå = []
+    ladestrøm = []
+    nytt_forbruk = []
+    charging,discharging,ikke_salg = False,False,False
     for i, val in enumerate(time_liste):
         if i < 24*365:
             timenr = int(val)
