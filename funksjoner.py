@@ -33,7 +33,7 @@ def døgnfordeling(liste):
 
 #---Plot av fordeling av strømforbruket i løpet av ukedager---
 def ukesfordeling(forbruk,dato,time):
-
+    '''Viser fordelingen i løpet av de ulike ukedagene'''
     antal = np.zeros(24*7)
     timeverdi = np.zeros(24*7)
     tidspunkt = 'Mandag    Tirsdag    Onsdag    Torsdag    Fredag    Lørdag    Søndag'
@@ -83,76 +83,13 @@ asind = lambda degrees: np.rad2deg(np.arcsin(degrees))
 acosd = lambda degrees: np.rad2deg(np.arccos(degrees))
 
 def solprod_eksperimentell(Gb_n, Gd_h, Ta, antal, Zs, beta, hvilken_verdi):
-    '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
-    til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
-    roterende panelstativ, sett Zs og beta til 666'''
+    '''Samme funksjon som solprod, men denne kan returnere andre verdier.'''
     # faste verdier
     L = 60.61318
     LL = 12.01088
     SL = 15
-    n_sol = 0.205 # Virkningsgrad sol !!!
-    LST = -1
-    A = 1.722*1.134   # Areal per panel !!! =1.953m^2
-    # Tap pga. varme
-    T_tap_Pmpp = -0.0034 #Varierer per paneltype, Temperaturkoefisient Pmpp
-    T_noct = 45          #Varierer per paneltype, Celletemp test
-    T_a_noct = 20        # NOCT omgivelsestemp
-    Gt_noct = 800
-    ta = 0.9             # ta er 0.9 for silicon solar cell
-
-
-    test_list = []
-
-    for i,val in enumerate(Gb_n):
-        
-            LST += 1
-            if LST == 24: LST = 0
-            N = 1 + int(i/24)
-            delta = 23.45 * sind(360/365*(284+N))
-            B = (N-81)*360/364
-            ET = 9.87*sind(2*B)-7.53*cosd(B)-1.5*sind(B)
-            AST = LST + ET/60 - 4/60*(SL-LL) # (-<_>-) når østlig halvkule
-            h = (AST - 12) * 15
-            alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
-            z = asind(cosd(delta)*sind(h)/cosd(alfa))
-            if Zs == 666 and beta == 666: #sjekker om det er roterende panelstativ. Da optimaliseres vinkelen.
-                theta = 0
-                beta = alfa
-            else:
-                theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
-                        +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
-                        +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
-            if N < 90 or N > 333: albedo = 0.65
-            else: albedo = 0.2
-
-            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
-            if G < 0: G = 0
-            P = G * n_sol
-
-            Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
-            tap_varme = T_tap_Pmpp*(Tc-T_noct)
-
-            produksjon = (P + tap_varme) * A * antal / 1000
-            
-            # if i < 48:
-            #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
-            if hvilken_verdi == 'produksjon':
-                test_list.append(produksjon)
-            elif hvilken_verdi == 'alfa':
-                test_list.append(alfa)
-            else:
-                print('Den verdien er ikke definert')
-    return test_list
-
-def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
-    '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
-    til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
-    roterende panelstativ, sett Zs og beta til 666'''
-    # faste verdier
-    L = 60.61318
-    LL = 12.01088
-    SL = 15
-    n_sol = 0.20 # Virkningsgrad sol !!!
+    n_sol = 0.20 # Virkningsgrad solcellepanel !!!
+    n_skygge = 0.95 # 5% tap pga skygge fra støv og snø
     n_inverter = 0.97
     LST = 0
     A = 1.755*1.038   # Areal per panel !!!
@@ -187,7 +124,7 @@ def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
             if N < 90 or N > 333: albedo = 0.65
             else: albedo = 0.2
 
-            G = Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)
+            G = (Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)) * n_skygge
             if G < 0: G = 0
             P = G * n_sol
 
@@ -196,6 +133,72 @@ def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
                 tap_varme = T_tap_Pmpp*(Tc-T_noct)
             else: tap_varme = 0
 
+            produksjon = (P + tap_varme) * A * antal / 1000 * n_inverter
+            
+            # if i < 48:
+            #     print(f'N = {N} for dato {df.iloc[i][0]}, LST = {LST}, delta = {delta}, B = {B}, ET = {ET}, AST = {AST}, h = {h}, alfa = {alfa}')
+            if hvilken_verdi == 'produksjon':
+                test_list.append(produksjon)
+            elif hvilken_verdi == 'alfa':
+                test_list.append(alfa)
+            else:
+                print('Den verdien er ikke definert')
+    return test_list
+
+def solprod_2(Gb_n, Gd_h, Ta, antal, Zs, beta):
+    '''Tar inn fil med soldata, areal, og vinkler. Bruker dette
+    til å regne ut produksjonen fra solenergi. Gitt som kWh/h. Om det er
+    roterende panelstativ, sett Zs og beta til 666'''
+    # faste verdier
+    L = 60.61318
+    LL = 12.01088
+    SL = 15
+    n_sol = 0.20 # Virkningsgrad solcellepanel !!!
+    n_skygge = 0.95 # 5% tap pga skygge fra støv og snø
+    n_inverter = 0.97
+    LST = 0
+    A = 1.755*1.038   # Areal per panel !!!
+    # Tap pga. varme
+    T_tap_Pmpp = -0.0035 #Varierer per paneltype, Temperaturkoefisient Pmpp
+    T_noct = 45          #Varierer per paneltype, Celletemp test
+    T_a_noct = 20        # NOCT omgivelsestemp
+    Gt_noct = 800
+    ta = 0.9             # ta er 0.9 for silicon solar cell
+
+
+    test_list = []
+
+    for i in range(0,8760):
+            LST += 1
+            if LST == 25: LST = 1
+            N = 1 + int(i/24)
+            delta = 23.45 * sind(360/365*(284+N))
+            B = (N-81)*360/364
+            ET = 9.87*sind(2*B)-7.53*cosd(B)-1.5*sind(B)
+            AST = LST + ET/60 - 4/60*(SL-LL) # (-<_>-) når østlig halvkule
+            h = (AST - 12) * 15
+            alfa = asind(sind(L)*sind(delta)+cosd(L)*cosd(delta)*cosd(h))
+            z = asind(cosd(delta)*sind(h)/cosd(alfa))
+            if Zs == 666 or beta == 666: #sjekker om det er roterende panelstativ. Da optimaliseres vinkelen.
+                theta = 0
+                beta = 90 - alfa
+            else:
+                theta = acosd(sind(L)*sind(delta)*cosd(beta)-cosd(L)*sind(delta)*sind(beta)*cosd(Zs)
+                        +cosd(L)*cosd(delta)*cosd(h)*cosd(beta)+sind(L)*cosd(delta)*sind(beta)*cosd(h)*cosd(Zs)
+                        +cosd(delta)*sind(h)*sind(beta)*sind(Zs))
+            if N < 90 or N > 333: albedo = 0.65
+            else: albedo = 0.2
+
+            G = (Gb_n[i] * cosd(theta) + Gd_h[i] * (180 - beta)/180 + albedo * (Gb_n[i]+Gd_h[i])*((1-cosd(theta))/2)) * n_skygge
+            if G < 0: G = 0
+            P = G * n_sol
+
+            if G != 0:
+                Tc = (T_noct-T_a_noct)*(G/Gt_noct)*(1-n_sol/ta)+Ta[i]
+                tap_varme = T_tap_Pmpp*(Tc-T_noct)
+            else: tap_varme = 0
+
+            # Regner ut estimert produksjon fra solcelleanlegg [kW]
             produksjon = (P + tap_varme) * A * antal / 1000 * n_inverter
             
             # if i < 48:
@@ -226,7 +229,7 @@ def luft_tetthet(Ta,RH,SP):
     return rho
 
 def vindprod(vindspeed,Ta,RH,SP, cut_in,cut_out,A,Cp,n_gen):
-    '''Tar inn vinddata og regner ut produksjon fra vindturbin, kW'''
+    '''Tar inn vinddata og regner ut produksjon fra vindturbin, [kW]'''
     liste = []
     for i,v in enumerate(vindspeed):
         if v <= cut_in or v >= cut_out:
@@ -272,8 +275,8 @@ def batteri(kap,forbruk,time_liste):
     #kapasitet = 8*2.56 # kWh
     antall = 10
     tot_kap = kap# * antall
-    n_charge = 0.7
-    n_discharge = 0.7
+    n_charge = 0.85
+    n_discharge = 0.85
     C_charge = 1/7
     C_discharge = 1/7
     batterinivå_f,batterinivå_e = 0,0
@@ -316,15 +319,16 @@ def batteri(kap,forbruk,time_liste):
             charging,discharging,ikke_salg = False, False, False
     return nytt_forbruk
 
-def batteri_2(kap,forbruk,time_liste):
-    '''Bruker batteri til å jamne ut strømforbruket'''
+def batteri_2(kap,forbruk,time_liste,n_batt):
+    '''Bruker batteri til å jamne ut strømforbruket, eksperimentell 
+    versjon der lade/utlade-effektiviteten kan endres.'''
     DoD = 0.8
     E,V = 200,12.8 # Ah, V
     #kapasitet = 8*2.56 # kWh
     antall = 10
     tot_kap = kap# * antall
-    n_charge = 1#0.7
-    n_discharge = 1#0.7
+    n_charge = n_batt#0.7
+    n_discharge = n_batt#0.7
     C_charge = 1/7
     C_discharge = 1/7
     batterinivå_f,batterinivå_e = 0,0

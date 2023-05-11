@@ -1,4 +1,5 @@
 #%%
+# --- Laster inn lister og verdier ---
 import pandas as pd
 import matplotlib.pyplot as plt
 import numpy as np
@@ -73,6 +74,7 @@ for i in range(0,8760):
     spotpris_liste.append(spotpris_kr)
 print('Lister er lastet inn')
 #%%
+# --- Laster inn kostnader og regner ut produksjon fra sol og vind ---
 import time
 
 #---Priser og kostnad---
@@ -103,22 +105,24 @@ sol_roterende = solprod_2(Gb_n, Gd_h, Ta, antal = 1, Zs = 666, beta = 666)
 vind_horisontal2 = vindprod(vindspeed,Ta,RH,SP, cut_in= 3, cut_out= 50, A = np.pi*2.35**2/4, Cp = 0.385, n_gen = 0.9)
 
 #%%
-#                                san, nedre, øvre, fast, rot, bio, batt, vind
-def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0]):
-#                                0/1     0/1   0/1  fast/rot/0 0/1   kWh   antall
-    '''Tar inn en liste med antall enheter av de ulike enerkikildene, returnerer NNV og installasjonskostnad'''
+# --- Definerer inn funksjoner for lønnsomhet ---
+#                                san, nedre, øvre, fast, rot, bio, LAB, LIB, vind
+def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,   0]):
+#                                0/1     0/1   0/1  fast/rot/0 0/1   kWh  kWh antall
+    '''Tar inn en liste med antall enheter av de ulike enerkikildene, returnerer NPV og installasjonskostnad'''
     
     #---Variabler---
-    paneler_sanitær = 28             # antall
+    paneler_sanitær = 48             # antall
     paneler_nedre_restaurant = 20
     paneler_øvre_restaurant = 32
     paneler_fastmontert = 24
     paneler_roterende = 15
 
-    vindturbiner_h2 = energikilde[7]
+    vindturbiner_h2 = energikilde[8]
 
     bioandel = 0.21*energikilde[5]          # % av strømforbruket som kan dekkes av bio
-    batterikapasitet = energikilde[6]       # kWh lagringskapasitet
+    LAB_kapasitet = energikilde[6]       # kWh lagringskapasitet
+    LIB_kapasitet = energikilde[7]       # kWh lagringskapasitet
 
     PV_tak_sanitær = festeskinne*36+festeklemme*162+PV_panel*paneler_sanitær+sol_installasjon
     PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon
@@ -126,14 +130,17 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0])
     PV_fri = fast_stativ+paneler_fastmontert*PV_panel+sol_installasjon
     PV_rot = rot_stativ+PV_panel*paneler_roterende+sol_installasjon
 
-    batteribank = 4595/(12*260)*1000*batterikapasitet  #kr/kWh * kWh
-    installasjon_batteri = 10000*min(1,energikilde[6])
-    installasjonskostnader_batt = batteribank + installasjon_batteri
+    LAB_pris = 4595/(12*260)*1000*LAB_kapasitet  #kr/kWh * kWh
+    installasjon_LAB = 10000*min(1,energikilde[6])
+    installasjonskostnader_LAB = LAB_pris + installasjon_LAB
+    LIB_pris = 4200*LIB_kapasitet  #kr/kWh * kWh
+    installasjon_LIB = LIB_pris*0.2*min(1,energikilde[7])
+    installasjonskostnader_LIB = LIB_pris + installasjon_LIB
     #---Installasjon---
     pris_sol = PV_tak_sanitær*energikilde[0] + PV_tak_nedre*energikilde[1] + PV_tak_øvre*energikilde[2] + PV_fri*energikilde[3] + PV_rot*energikilde[4]
-    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7]))
+    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
 
-    installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_batt + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[7]+installasjon_vind*min(1,energikilde[7])
+    installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_LAB + installasjonskostnader_LIB + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[8]+installasjon_vind*min(1,energikilde[8])
     # Regner ut solproduksjon
     
     total_solproduksjon=[]
@@ -167,8 +174,14 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0])
         else:
             energibalanse.append(energi)
 
-    #---Batteri---
-    energibalanse_batt = batteri(batterikapasitet,energibalanse,time_liste)
+    #---batteri---
+    if energikilde[6] != 0:
+        energibalanse_batt = batteri(LAB_kapasitet,energibalanse,time_liste)
+    elif energikilde[7] != 0:
+        energibalanse_batt = batteri_2(LIB_kapasitet,energibalanse,time_liste,0.95)
+    else:
+        energibalanse_batt = energibalanse
+
     #---Energibalanse etter batteri---
     kjøpt_strøm = []
     solgt_strøm = []
@@ -190,35 +203,36 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0])
     total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
     total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
-    NNVf,NNVe = 0,-installasjonskostnader
+    NPVf,NPVe = 0,-installasjonskostnader
     r = 0.05
     for i in range(1,31):
-        NNVf += -total_årlig_kostnad_før/(1+r)**i
-        NNVe += -total_årlig_kostnad_etter/(1+r)**i
+        NPVf += -total_årlig_kostnad_før/(1+r)**i
+        NPVe += -total_årlig_kostnad_etter/(1+r)**i
     for i in range(1,11):
-        NNVe += -installasjonskostnader_batt/(1+r)**(3*i)
+        NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
     for i in range(1,4):
-        NNVe += -pris_invertere/(1+r)**(10*i)
+        NPVe += -(pris_invertere+installasjonskostnader_LIB)/(1+r)**(10*i)
 
 
 
-    return NNVe,installasjonskostnader,min(energibalanse_batt)
+    return NPVe,installasjonskostnader,min(energibalanse_batt)
 
-def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100,    0]):
-#                                     0/1     0/1   0/1  fast/rot/0 0/1   kWh   antall
+def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,   0]):
+#                                     0/1     0/1   0/1  fast/rot/0 0/1   kWh  kWh  antall
     '''Tar inn en liste med antall enheter av de ulike enerkikildene, printer relevant info'''
     
     #---Variabler---
-    paneler_sanitær = 28             # antall
+    paneler_sanitær = 48             # antall
     paneler_nedre_restaurant = 20
     paneler_øvre_restaurant = 32
     paneler_fastmontert = 24
     paneler_roterende = 15
 
-    vindturbiner_h2 = energikilde[7]
+    vindturbiner_h2 = energikilde[8]
 
     bioandel = 0.21*energikilde[5]          # % av strømforbruket som kan dekkes av bio
-    batterikapasitet = energikilde[6]       # kWh lagringskapasitet
+    LAB_kapasitet = energikilde[6]       # kWh lagringskapasitet
+    LIB_kapasitet = energikilde[7]       # kWh lagringskapasitet
 
     PV_tak_sanitær = festeskinne*36+festeklemme*162+PV_panel*paneler_sanitær+sol_installasjon
     PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon
@@ -226,14 +240,17 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     PV_fri = fast_stativ+paneler_fastmontert*PV_panel+sol_installasjon
     PV_rot = rot_stativ+PV_panel*paneler_roterende+sol_installasjon
 
-    batteribank = 4595/(12*260)*1000*batterikapasitet  #kr/kWh * kWh
-    installasjon_batteri = 10000*min(1,energikilde[6])
-    installasjonskostnader_batt = batteribank + installasjon_batteri
+    LAB_pris = 4595/(12*260)*1000*LAB_kapasitet  #kr/kWh * kWh
+    installasjon_LAB = 10000*min(1,energikilde[6])
+    installasjonskostnader_LAB = LAB_pris + installasjon_LAB
+    LIB_pris = 4200*LIB_kapasitet  #kr/kWh * kWh
+    installasjon_LIB = LIB_pris*0.2*min(1,energikilde[7])
+    installasjonskostnader_LIB = LIB_pris + installasjon_LIB
     #---Installasjon---
     pris_sol = PV_tak_sanitær*energikilde[0] + PV_tak_nedre*energikilde[1] + PV_tak_øvre*energikilde[2] + PV_fri*energikilde[3] + PV_rot*energikilde[4]
-    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7]))
+    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
 
-    installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_batt + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[7]+installasjon_vind*min(1,energikilde[7])
+    installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_LAB + installasjonskostnader_LIB + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[8]+installasjon_vind*min(1,energikilde[8])
     # Regner ut solproduksjon
     
     total_solproduksjon=[]
@@ -267,8 +284,14 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
         else:
             energibalanse.append(energi)
 
-    #---Batteri---
-    energibalanse_batt = batteri(batterikapasitet,energibalanse,time_liste)
+    #---batteri---
+    if energikilde[6] != 0:
+        energibalanse_batt = batteri(LAB_kapasitet,energibalanse,time_liste)
+    elif energikilde[7] != 0:
+        energibalanse_batt = batteri_2(LIB_kapasitet,energibalanse,time_liste,0.95)
+    else:
+        energibalanse_batt = energibalanse
+
     #---Energibalanse etter batteri---
     kjøpt_strøm = []
     solgt_strøm = []
@@ -290,15 +313,15 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
     total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
-    NNVf,NNVe = 0,-installasjonskostnader
+    NPVf,NPVe = 0,-installasjonskostnader
     r = 0.05
     for i in range(1,31):
-        NNVf += -total_årlig_kostnad_før/(1+r)**i
-        NNVe += -total_årlig_kostnad_etter/(1+r)**i
+        NPVf += -total_årlig_kostnad_før/(1+r)**i
+        NPVe += -total_årlig_kostnad_etter/(1+r)**i
     for i in range(1,11):
-        NNVe += -installasjonskostnader_batt/(1+r)**(3*i)
+        NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
     for i in range(1,4):
-        NNVe += -pris_invertere/(1+r)**(10*i)
+        NPVe += -(pris_invertere+installasjonskostnader_LIB)/(1+r)**(10*i)
     
     #---Plot---
 
@@ -307,7 +330,7 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     plt.plot(døgnfordeling(energibalanse_batt))
     plt.show()
 
-    print(f'NNV før:   {NNVf}\nNNV etter: {NNVe}')
+    print(f'NPV før:   {NPVf}\nNPV etter: {NPVe}')
 
 
     print(f'Total årlig kostnad før {total_årlig_kostnad_før} kr/år inkl. MVA')
@@ -330,10 +353,11 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
 
 
 #%%
+# --- For løkke for å finne scenarioet som har høyest NPV ---
 start = time.time()
-NNVe_best = -1000000000
+NPVe_best = -1000000000
 scenario_best = []
-NNVe_nestbest = -1000000000
+NPVe_nestbest = -1000000000
 scenario_nestbest = []
 scenarioer = {'test': -1000000000}
 for sanitær in [0,1]:
@@ -344,56 +368,52 @@ for sanitær in [0,1]:
                     if rot != 0:
                         fast = 0
                     for bio in [0,1]:
-                        for batt in [0]:
-                            for vind in [0]:
-                                energikilder = [sanitær,nedre,øvre,fast,rot,bio,batt,vind]
-                                scenario = lønnsomhet(energikilder)
-                                NNVe = scenario[0]
-                                string = str(energikilder)
-                                if scenario[2]>-50:
-                                    scenarioer[string] = scenario[0]
-                                    # print(scenarioer)
-                                    scenarioer = sorted(scenarioer.items(), key=lambda x:x[1], reverse = True)
-                                    # print(scenarioer)
-                                    if len(scenarioer)>10:
+                        for LAB in [0]:
+                            for LIB in [0]:
+                                if LAB != 0:
+                                    LIB = 0
+                                for vind in [0]:
+                                    energikilder = [sanitær,nedre,øvre,fast,rot,bio,LAB,LIB,vind]
+                                    scenario = lønnsomhet(energikilder)
+                                    NPVe = scenario[0]
+                                    string = str(energikilder)
+                                    if scenario[2]>-50:
+                                        scenarioer[string] = scenario[0]
                                         # print(scenarioer)
-                                        scenarioer.pop()
-                                    scenarioer = dict(scenarioer)
+                                        scenarioer = sorted(scenarioer.items(), key=lambda x:x[1], reverse = True)
+                                        # print(scenarioer)
+                                        if len(scenarioer)>10:
+                                            # print(scenarioer)
+                                            scenarioer.pop()
+                                        scenarioer = dict(scenarioer)
 
-                                # if scenario[0] > NNVe_best:
-                                #     NNVe_nestbest = NNVe_best
+                                # if scenario[0] > NPVe_best:
+                                #     NPVe_nestbest = NPVe_best
                                 #     scenario_nestbest = scenario_best
-                                #     NNVe_best = scenario[0]
+                                #     NPVe_best = scenario[0]
                                 #     scenario_best = energikilder
-                                # elif scenario[0] > NNVe_nestbest:
-                                #     NNVe_nestbest = scenario[0]
+                                # elif scenario[0] > NPVe_nestbest:
+                                #     NPVe_nestbest = scenario[0]
                                 #     scenario_nestbest = energikilder
 
 # print(f'Beste kombinasjon er: {scenario_best}')
-# print(f'Det gir NNV på {round(NNVe_best)}')
+# print(f'Det gir NPV på {round(NPVe_best)}')
 # print(f'Beste kombinasjon er: {scenario_nestbest}')
-# print(f'Det gir NNV på {round(NNVe_nestbest)}')
+# print(f'Det gir NPV på {round(NPVe_nestbest)}')
 stop = time.time()
 print(f'Tid: {stop-start}sek')
 
 print(scenarioer)
 
-
-
-#                 san, nedre, øvre, fast, rot, bio, batt, vind
-# print(lønnsomhet([1,     1,    1,    1,   1,   1,  100,  0])[1])
 #%%
-    
-best_scenario = list(scenarioer)[0]
-best_NNV = list(scenarioer.values())[0]
-print(f'Beste scenario er {best_scenario}')
+# --- Plotter statistikk for scenario ---
 
-kun_tak = [1,1,1,0,0,0,0,0]
-kun_fast = [0,0,0,1,0,0,0,0]
-kun_rot = [0,0,0,0,1,0,0,0]
-best = [1,1,1,8,0,1,0,0]
-test = [0,0,0,0,3,0,0,0]
-lønnsomhet_stats(best)
+kun_tak = [1,1,1,0,0,0,0,0,0]
+kun_fast = [0,0,0,1,0,0,0,0,0]
+kun_rot = [0,0,0,0,1,0,0,0,0]
+best = [1,1,1,8,0,1,0,0,0]
+test = [0,0,0,0,0,0,0,100,0]
+lønnsomhet_stats(test)
 
 
 #%%
@@ -401,11 +421,11 @@ liste = [1,2,3]
 liste2 = [2*num for num in liste]
 print(liste2)
 #%%
-footballers_goals = {'Eusebio': 120, 'Cruyff': 104, 'Pele': 150, 'Ronaldo': 132, 'Messi': 125}
-print(footballers_goals)
-footballers_goals['Test'] = 0
+treig = {'Anders': -10, 'Ørnulf': 150, 'Ludvig': 37}
+print(treig)
+treig['Gj.snitt'] = 13
 
-footballers_goals = sorted(footballers_goals.items(), key=lambda x:x[1])
-footballers_goals.pop()
-footballers_goals.pop()
-print(footballers_goals)
+treig = sorted(treig.items(), key=lambda x:x[1])
+treigest = treig[-1]
+treig = dict(treig)
+print(f'Den treigeste er {treigest[0]} med {treigest[1]} i treghet\nHer er ranking: {treig}')
