@@ -105,8 +105,8 @@ plt.ylabel('Produksjon [kWh]')
 plt.legend()
 plt.show()
 
-plt.plot(døgnfordeling(Gb_n/1000), label = 'Beam')
-plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffuse')
+plt.plot(døgnfordeling(Gb_n/1000), label = 'Direkte')
+plt.plot(døgnfordeling(Gd_h/1000), label = 'Diffus')
 plt.xlabel('Time')
 plt.ylabel('Innstråling [kWh]')
 plt.legend()
@@ -118,6 +118,16 @@ print(f'Årlig produksjon fra 1 panel [kWh]:'
       f'\n\tØvre tak:    {round(sum(sol_øvre_restaurant),2)}'
       f'\n\tFast:        {round(sum(sol_fastmontert),2)}'
       f'\n\tRoterende:   {round(sum(sol_roterende),2)}')
+
+plt.plot(måneder,månedtot(sol_sanitær), label = 'Sanitær')
+plt.plot(måneder,månedtot(sol_nedre_restaurant), label = 'Nedre tak rest.')
+plt.plot(måneder,månedtot(sol_øvre_restaurant), label = 'Øvre tak rest.')
+plt.plot(måneder,månedtot(sol_fastmontert), label = 'Fastmontert')
+plt.plot(måneder,månedtot(sol_roterende), label = 'Roterende')
+plt.xlabel('Måned')
+plt.ylabel('Produksjon [kWh]')
+plt.legend()
+plt.show()
 #%%
 # ---Vind---
 

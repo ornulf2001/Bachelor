@@ -125,7 +125,7 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,  
     LIB_kapasitet = energikilde[7]       # kWh lagringskapasitet
 
     PV_tak_sanitær = festeskinne*36+festeklemme*162+PV_panel*paneler_sanitær+sol_installasjon
-    PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon
+    PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon-0.5*sol_installasjon*max(0,(energikilde[1]+energikilde[2])-1)
     PV_tak_øvre = festeskinne*24+festeklemme*102+PV_panel*paneler_øvre_restaurant+sol_installasjon
     PV_fri = fast_stativ+paneler_fastmontert*PV_panel+sol_installasjon
     PV_rot = rot_stativ+PV_panel*paneler_roterende+sol_installasjon
@@ -138,7 +138,7 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,  
     installasjonskostnader_LIB = LIB_pris + installasjon_LIB
     #---Installasjon---
     pris_sol = PV_tak_sanitær*energikilde[0] + PV_tak_nedre*energikilde[1] + PV_tak_øvre*energikilde[2] + PV_fri*energikilde[3] + PV_rot*energikilde[4]
-    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
+    pris_invertere = inverter*(energikilde[0]+min((energikilde[1]+energikilde[2]),1)+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
 
     installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_LAB + installasjonskostnader_LIB + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[8]+installasjon_vind*min(1,energikilde[8])
     # Regner ut solproduksjon
@@ -203,11 +203,21 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,  
     total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
     total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
+    # NPVf,NPVe = 0,-installasjonskostnader
+    # r = 0.05
+    # for i in range(1,31):
+    #     NPVf += -total_årlig_kostnad_før/(1+r)**i
+    #     NPVe += -total_årlig_kostnad_etter/(1+r)**i
+    # for i in range(1,11):
+    #     NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
+    # for i in range(1,4):
+    #     NPVe += -(pris_invertere+installasjonskostnader_LIB)/(1+r)**(10*i)
+
     NPVf,NPVe = 0,-installasjonskostnader
     r = 0.05
     for i in range(1,31):
-        NPVf += -total_årlig_kostnad_før/(1+r)**i
-        NPVe += -total_årlig_kostnad_etter/(1+r)**i
+        NPVf += -0/(1+r)**i
+        NPVe += (total_årlig_kostnad_før-total_årlig_kostnad_etter)/(1+r)**i
     for i in range(1,11):
         NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
     for i in range(1,4):
@@ -215,7 +225,7 @@ def lønnsomhet(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,  
 
 
 
-    return NPVe,installasjonskostnader,min(energibalanse_batt)
+    return NPVe,installasjonskostnader,min(energibalanse_batt),energibalanse_batt,total_solproduksjon,levert_energi
 
 def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 100,   0]):
 #                                     0/1     0/1   0/1  fast/rot/0 0/1   kWh  kWh  antall
@@ -235,7 +245,7 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     LIB_kapasitet = energikilde[7]       # kWh lagringskapasitet
 
     PV_tak_sanitær = festeskinne*36+festeklemme*162+PV_panel*paneler_sanitær+sol_installasjon
-    PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon
+    PV_tak_nedre = festeskinne*15+festeklemme*66+PV_panel*paneler_nedre_restaurant+sol_installasjon-0.5*sol_installasjon*max(0,(energikilde[1]+energikilde[2])-1)
     PV_tak_øvre = festeskinne*24+festeklemme*102+PV_panel*paneler_øvre_restaurant+sol_installasjon
     PV_fri = fast_stativ+paneler_fastmontert*PV_panel+sol_installasjon
     PV_rot = rot_stativ+PV_panel*paneler_roterende+sol_installasjon
@@ -248,7 +258,7 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     installasjonskostnader_LIB = LIB_pris + installasjon_LIB
     #---Installasjon---
     pris_sol = PV_tak_sanitær*energikilde[0] + PV_tak_nedre*energikilde[1] + PV_tak_øvre*energikilde[2] + PV_fri*energikilde[3] + PV_rot*energikilde[4]
-    pris_invertere = inverter*(energikilde[0]+energikilde[1]+energikilde[2]+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
+    pris_invertere = inverter*(energikilde[0]+min((energikilde[1]+energikilde[2]),1)+min(1,int((energikilde[3]+1)/2))+min(1,energikilde[4])+min(1,energikilde[6])+min(1,energikilde[7])+min(1,energikilde[8]))
 
     installasjonskostnader = pris_sol + pris_invertere + installasjonskostnader_LAB + installasjonskostnader_LIB + energikilde[5]*(fliskjele+installasjon_bio) + vindturbin_h2*energikilde[8]+installasjon_vind*min(1,energikilde[8])
     # Regner ut solproduksjon
@@ -313,11 +323,20 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     total_årlig_kostnad_etter = 1.25*round(sum(strømkostnaden)+49*12 + sum(nettleie_kr) + sum(flis_energi)*flis_pris)   # + installasjonskostnader# + innstallasjonskostnad/levetid ? + vedlikehold
     total_årlig_kostnad_før = 1.25*round(sum(strømkostnad(energiforbruk_liste,strømpris_liste,spotpris_liste))+49*12+sum(nettleie(energiforbruk_liste)))
 
+    # NPVf,NPVe = 0,-installasjonskostnader
+    # r = 0.05
+    # for i in range(1,31):
+    #     NPVf += -total_årlig_kostnad_før/(1+r)**i
+    #     NPVe += -total_årlig_kostnad_etter/(1+r)**i
+    # for i in range(1,11):
+    #     NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
+    # for i in range(1,4):
+    #     NPVe += -(pris_invertere+installasjonskostnader_LIB)/(1+r)**(10*i)
     NPVf,NPVe = 0,-installasjonskostnader
     r = 0.05
     for i in range(1,31):
-        NPVf += -total_årlig_kostnad_før/(1+r)**i
-        NPVe += -total_årlig_kostnad_etter/(1+r)**i
+        NPVf += -0/(1+r)**i
+        NPVe += (total_årlig_kostnad_før-total_årlig_kostnad_etter)/(1+r)**i
     for i in range(1,11):
         NPVe += -installasjonskostnader_LAB/(1+r)**(3*i)
     for i in range(1,4):
@@ -325,30 +344,39 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
     
     #---Plot---
 
-    plt.plot(døgnfordeling(energiforbruk_liste))
-    plt.plot(døgnfordeling(energibalanse))
-    plt.plot(døgnfordeling(energibalanse_batt))
+    plt.plot(døgnfordeling(energiforbruk_liste), label = 'Referansesystem')
+    # plt.plot(døgnfordeling(energibalanse))
+    plt.plot(døgnfordeling(energibalanse_batt), label = 'Mikronett')
+    plt.xlabel('Time')
+    plt.ylabel('Forbruk fra strømnett [kWh]')
+    plt.legend()
     plt.show()
 
-    print(f'NPV før:   {NPVf}\nNPV etter: {NPVe}')
+    print(f'NPV før:   {NPVf} kr\nNPV etter: {round(NPVe,2)} kr')
 
 
     print(f'Total årlig kostnad før {total_årlig_kostnad_før} kr/år inkl. MVA')
     print(f'Total årlig kostnad etter {total_årlig_kostnad_etter} kr/år inkl. MVA')
-    print(f'Kostnadsdifferanse: {total_årlig_kostnad_før-total_årlig_kostnad_etter}')
-    print(f'\nInstallasjonskostnader: {installasjonskostnader}')
-    print(f'Invertere: {pris_invertere}')
-    print(f'Pris sol: {pris_sol}')
-    print(f'Nettleie: {sum(nettleie(energiforbruk_liste))}---{sum(nettleie(energibalanse_batt))}')
-    print(f'Strømforbruk: {round(sum(energibalanse_batt))}   før: {round(sum(energiforbruk_liste))}'
-        f'\nKjøpt strøm:  {round(sum(kjøpt_strøm))}'
-        f'\nSolgt strøm:    {round(sum(solgt_strøm))}')
+    print(f'Kostnadsdifferanse: {total_årlig_kostnad_før-total_årlig_kostnad_etter} kr')
+    print(f'Nedbetalingstid: {round(installasjonskostnader/(total_årlig_kostnad_før-total_årlig_kostnad_etter),2)} år')
+    print(f'\nInstallasjonskostnader: {installasjonskostnader} kr')
+    print(f'Kostnad invertere: {pris_invertere}')
+    print(f'Nettleie: {round(sum(nettleie(energibalanse_batt)),2)} kr før: {sum(nettleie(energiforbruk_liste))} kr')
+    print(f'Strømforbruk: {round(sum(energibalanse_batt))} kWh  før: {round(sum(energiforbruk_liste))} kWh'
+        f'\nKjøpt strøm:  {round(sum(kjøpt_strøm))} kWh'
+        f'\nSolgt strøm:   {round(sum(solgt_strøm))} kWh')
+    print(f'Største overproduksjon: {round(min(energibalanse_batt),2)} kWh/h')
     print(f'\nBio\n'
-        f'\tInstallasjon/år: {energikilde[5]*(fliskjele+installasjon_bio)/30}\n'
-        f'\tKostnad flis:    {sum(flis_energi)*flis_pris}\n'
-        f'\tBespart:         {sum(strømkostnad(levert_energi,strømpris_liste,spotpris_liste))}')
-    print(f'Største overproduksjon: {min(energibalanse_batt)}')
-    
+          f'\tInstallasjonskostnad: {round(fliskjele+installasjon_bio,2)} kr\n'
+        f'\tLevert energi:   {round(sum(levert_energi),2)} kWh\n'
+        f'\tEnergi flis:     {round(sum(flis_energi),2)} kWh\n'
+        f'\tKostnad flis:    {round(sum(flis_energi)*flis_pris,2)} kr\n'
+        f'\tMengde flis:     {round(sum(Vol_flis),2)} lm^3\n'
+        f'\n\tBio-andel: {round(sum(levert_energi)/sum(energiforbruk_liste),3)}')
+    print(f'\nSol\n'
+          f'\tInstallasjonskostnad: {pris_sol} kr\n'
+          f'\tProdusert energi: {round(sum(total_solproduksjon),2)} kWh\n'
+          f'\tSol-andel: {round(sum(total_solproduksjon)/sum(energiforbruk_liste),3)}')
 
 
 
@@ -411,21 +439,31 @@ print(scenarioer)
 kun_tak = [1,1,1,0,0,0,0,0,0]
 kun_fast = [0,0,0,1,0,0,0,0,0]
 kun_rot = [0,0,0,0,1,0,0,0,0]
-best = [1,1,1,8,0,1,0,0,0]
-test = [0,0,0,0,0,0,0,100,0]
-lønnsomhet_stats(test)
+flis = [0,0,0,0,0,1,0,0,0]
+rang_1 = [1,0,1,4,0,1,0,0,0]
+rang_2 = [0,0,1,6,0,1,0,0,0]
+rang_3 = [1,0,0,5,0,1,0,0,0]
+rang_4 = [0,0,0,7,0,1,0,0,0]
+rang_5 = [1,1,1,3,0,1,0,0,0]
+rang_6 = [0,1,1,5,0,1,0,0,0]
+rang_7 = [1,1,0,4,0,1,0,0,0]
+rang_8 = [0,1,0,6,0,1,0,0,0]
+test = [0,0,0,0,0,0,0,0,0]
 
+lønnsomhet_stats(flis)
+#%%
+liste = rang_1
+plt.plot(månedtot(lønnsomhet(liste)[3]))
+plt.plot(månedtot(lønnsomhet(liste)[4]))
+plt.plot(månedtot(lønnsomhet(liste)[5]))
+plt.show()
+print(f'Reduksjon i strømimport: {round(sum(energiforbruk_liste)-sum(lønnsomhet(liste)[3]))}'
+      f'\n\tEnergi fra bio: {round(sum(lønnsomhet(liste)[5]))}'
+      f'\n\tEnergi fra sol: {round(sum(lønnsomhet(liste)[4]))}'
+      f'\n\tBio-andel: {round(sum(lønnsomhet(liste)[5])/sum(energiforbruk_liste),3)}'
+      f'\n\tSol-andel: {round(sum(lønnsomhet(liste)[4])/sum(energiforbruk_liste),3)}')
 
 #%%
 liste = [1,2,3]
 liste2 = [2*num for num in liste]
 print(liste2)
-#%%
-treig = {'Anders': -10, 'Ørnulf': 150, 'Ludvig': 37}
-print(treig)
-treig['Gj.snitt'] = 13
-
-treig = sorted(treig.items(), key=lambda x:x[1])
-treigest = treig[-1]
-treig = dict(treig)
-print(f'Den treigeste er {treigest[0]} med {treigest[1]} i treghet\nHer er ranking: {treig}')
