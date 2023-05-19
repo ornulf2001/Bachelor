@@ -256,7 +256,7 @@ for i in range(15,30):
     if produksjon > maks_prod:
         maks_prod = produksjon
         beste_vinkel = vinkel
-    elif produksjon == maks_prod: print(f'Tie ball game at vinkel {i}')
+    elif produksjon == maks_prod: print(f'Likt ved vinkel {i}')
     vinkel_list.append(vinkel)
     produksjon_list.append(produksjon)
 plt.plot(vinkel_list,produksjon_list)
@@ -278,7 +278,7 @@ for i in [-40,-20,-10,-5,0,5,10,20,40]:
     if produksjon > maks_prod:
         maks_prod = produksjon
         beste_vinkel = vinkel
-    elif produksjon == maks_prod: print(f'Tie ball game at vinkel {vinkel}')
+    elif produksjon == maks_prod: print(f'Likt ved vinkel {vinkel}')
     vinkel_list.append(vinkel)
     produksjon_list.append(produksjon)
 plt.plot(vinkel_list,produksjon_list)

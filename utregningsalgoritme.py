@@ -75,7 +75,7 @@ for i in range(0,8760):
 print('Lister er lastet inn')
 #%%
 # --- Laster inn kostnader og regner ut produksjon fra sol og vind ---
-import time
+# import time
 
 #---Priser og kostnad---
 flis_pris = 0.4   # kr/kWh
@@ -382,7 +382,8 @@ def lønnsomhet_stats(energikilde):# = [  1,     1,    1,    1,   1,   1,  100, 
 
 #%%
 # --- For løkke for å finne scenarioet som har høyest NPV ---
-start = time.time()
+# start = time.time()
+
 NPVe_best = -1000000000
 scenario_best = []
 NPVe_nestbest = -1000000000
@@ -428,8 +429,8 @@ for sanitær in [0,1]:
 # print(f'Det gir NPV på {round(NPVe_best)}')
 # print(f'Beste kombinasjon er: {scenario_nestbest}')
 # print(f'Det gir NPV på {round(NPVe_nestbest)}')
-stop = time.time()
-print(f'Tid: {stop-start}sek')
+# stop = time.time()
+# print(f'Tid: {stop-start}sek')
 
 print(scenarioer)
 
